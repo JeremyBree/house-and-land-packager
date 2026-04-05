@@ -3,11 +3,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from hlp.config import settings
+from hlp.config import get_settings
 
 
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application."""
+    settings = get_settings()
+
     application = FastAPI(
         title="House and Land Packager",
         version="0.1.0",
