@@ -55,3 +55,15 @@ class LotNotFoundError(NotFoundError):
 
 class DocumentNotFoundError(NotFoundError):
     """Raised when a document lookup fails."""
+
+
+class ExportTooLargeError(HLPError):
+    """Raised when an export request would exceed the maximum allowed rows."""
+
+
+class FilterPresetNotFoundError(NotFoundError):
+    """Raised when a filter preset lookup fails (or does not belong to user)."""
+
+
+class DuplicatePresetNameError(HLPError):
+    """Raised when a user already has a filter preset with the same name."""

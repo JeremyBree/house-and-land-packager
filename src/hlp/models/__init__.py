@@ -6,6 +6,7 @@ from hlp.models.developer import Developer
 from hlp.models.estate import Estate
 from hlp.models.estate_document import EstateDocument
 from hlp.models.estate_stage import EstateStage
+from hlp.models.filter_preset import FilterPreset
 from hlp.models.house_package import HousePackage
 from hlp.models.ingestion_log import IngestionLog
 from hlp.models.notification import Notification
@@ -26,6 +27,7 @@ __all__ = [
     "Estate",
     "EstateDocument",
     "EstateStage",
+    "FilterPreset",
     "GlobalPricingRule",
     "HousePackage",
     "IngestionLog",

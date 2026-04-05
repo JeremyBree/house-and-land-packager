@@ -16,6 +16,8 @@ from hlp.api.routers import developers as developers_router
 from hlp.api.routers import documents as documents_router
 from hlp.api.routers import estates as estates_router
 from hlp.api.routers import files as files_router
+from hlp.api.routers import filter_presets as filter_presets_router
+from hlp.api.routers import lot_search as lot_search_router
 from hlp.api.routers import lots as lots_router
 from hlp.api.routers import regions as regions_router
 from hlp.api.routers import stages as stages_router
@@ -26,7 +28,10 @@ from hlp.shared.exceptions import (
     AuthenticationError,
     DocumentNotFoundError,
     DuplicateEmailError,
+    DuplicatePresetNameError,
+    ExportTooLargeError,
     FileTooLargeError,
+    FilterPresetNotFoundError,
     HLPError,
     InvalidCsvError,
     InvalidStatusTransitionError,
@@ -126,6 +131,18 @@ def _register_exception_handlers(application: FastAPI) -> None:
     async def _doc_nf(_: Request, exc: DocumentNotFoundError):
         return _error_response(404, str(exc), "document_not_found")
 
+    @application.exception_handler(FilterPresetNotFoundError)
+    async def _preset_nf(_: Request, exc: FilterPresetNotFoundError):
+        return _error_response(404, str(exc), "filter_preset_not_found")
+
+    @application.exception_handler(DuplicatePresetNameError)
+    async def _dup_preset(_: Request, exc: DuplicatePresetNameError):
+        return _error_response(409, str(exc), "duplicate_preset_name")
+
+    @application.exception_handler(ExportTooLargeError)
+    async def _export_too_large(_: Request, exc: ExportTooLargeError):
+        return _error_response(413, str(exc), "export_too_large")
+
     @application.exception_handler(NotFoundError)
     async def _nf(_: Request, exc: NotFoundError):
         return _error_response(404, str(exc), "not_found")
@@ -207,6 +224,8 @@ def create_app() -> FastAPI:
     application.include_router(documents_router.estate_scoped_router)
     application.include_router(documents_router.docs_router)
     application.include_router(files_router.router)
+    application.include_router(lot_search_router.router)
+    application.include_router(filter_presets_router.router)
 
     return application
 
