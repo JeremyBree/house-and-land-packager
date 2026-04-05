@@ -39,13 +39,31 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Application lifespan: create tables on startup."""
+    """Application lifespan: create tables and seed on startup if empty."""
     logger.info("Application starting up...")
     try:
         engine = get_engine()
         logger.info("Connecting to database and creating tables...")
         Base.metadata.create_all(engine)
         logger.info("Database tables created/verified successfully (19 tables)")
+        # Auto-seed if database is empty (idempotent for PoC)
+        from hlp.database import get_session_factory
+        from hlp.models.profile import Profile
+
+        session = get_session_factory()()
+        try:
+            profile_count = session.query(Profile).count()
+            if profile_count == 0:
+                logger.info("Database is empty, running dev seed...")
+                from hlp.seeds.dev_seed import seed_dev
+
+                seed_dev(session)
+                session.commit()
+                logger.info("Dev seed complete")
+            else:
+                logger.info("Database already has %d profiles, skipping seed", profile_count)
+        finally:
+            session.close()
     except Exception as exc:
         # Don't crash on startup if DB is unavailable — health check will report it
         logger.warning("Could not initialize database on startup: %s", exc)
