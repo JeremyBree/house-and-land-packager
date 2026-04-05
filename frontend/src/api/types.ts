@@ -99,6 +99,128 @@ export interface EstateInput {
   active?: boolean
 }
 
+export type StageStatus = 'Active' | 'Upcoming' | 'Completed'
+export const STAGE_STATUSES: StageStatus[] = ['Active', 'Upcoming', 'Completed']
+
+export type LotStatus = 'Available' | 'Unavailable' | 'Hold' | 'Deposit Taken' | 'Sold'
+export const LOT_STATUSES: LotStatus[] = [
+  'Available',
+  'Unavailable',
+  'Hold',
+  'Deposit Taken',
+  'Sold',
+]
+
+export type LotOrientation = 'N' | 'NE' | 'E' | 'SE' | 'S' | 'SW' | 'W' | 'NW'
+export const LOT_ORIENTATIONS: LotOrientation[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW']
+
+export interface StageRead {
+  stage_id: number
+  estate_id: number
+  name: string
+  lot_count: number | null
+  status: StageStatus
+  release_date: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface StageDetailRead extends StageRead {
+  lot_count_actual: number
+  status_breakdown: Record<string, number>
+}
+
+export interface StageInput {
+  name: string
+  lot_count?: number | null
+  status: StageStatus
+  release_date?: string | null
+}
+
+export interface LotRead {
+  lot_id: number
+  stage_id: number
+  lot_number: string
+  frontage: string | null
+  depth: string | null
+  size_sqm: string | null
+  corner_block: boolean
+  orientation: string | null
+  side_easement: string | null
+  rear_easement: string | null
+  street_name: string | null
+  land_price: string | null
+  build_price: string | null
+  package_price: string | null
+  design: string | null
+  facade: string | null
+  brand: string | null
+  status: LotStatus
+  substation: boolean
+  title_date: string | null
+  last_confirmed_date: string | null
+  source: string | null
+  source_detail: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface LotInput {
+  lot_number: string
+  frontage?: string | null
+  depth?: string | null
+  size_sqm?: string | null
+  corner_block?: boolean
+  orientation?: string | null
+  side_easement?: string | null
+  rear_easement?: string | null
+  street_name?: string | null
+  land_price?: string | null
+  build_price?: string | null
+  package_price?: string | null
+  substation?: boolean
+  title_date?: string | null
+}
+
+export interface StatusHistoryRead {
+  history_id: number
+  lot_id: number
+  previous_status: LotStatus | null
+  new_status: LotStatus
+  changed_at: string
+  triggering_agent: string
+  source_detail: string | null
+}
+
+export interface StatusTransitionInput {
+  new_status: LotStatus
+  reason: string
+}
+
+export interface DocumentRead {
+  document_id: number
+  estate_id: number
+  stage_id: number | null
+  file_name: string
+  file_type: string
+  file_size: number
+  description: string | null
+  created_at: string
+  download_url: string
+}
+
+export interface CsvUploadResult {
+  created: number
+  skipped: number
+  errors: Array<{ row: number; error: string }>
+}
+
+export interface BulkLotCreateResult {
+  created: number
+  skipped: number
+  errors: Array<{ row: number; error: string }>
+}
+
 export interface PaginatedResponse<T> {
   items: T[]
   total: number

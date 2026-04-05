@@ -7,6 +7,7 @@ import NotFoundPage from '@/pages/NotFoundPage'
 import ForbiddenPage from '@/pages/ForbiddenPage'
 import EstatesListPage from '@/pages/estates/EstatesListPage'
 import EstateDetailPage from '@/pages/estates/EstateDetailPage'
+import StageDetailPage from '@/pages/stages/StageDetailPage'
 import UsersPage from '@/pages/admin/UsersPage'
 import RegionsPage from '@/pages/admin/RegionsPage'
 import DevelopersPage from '@/pages/admin/DevelopersPage'
@@ -28,6 +29,7 @@ export function AppRoutes() {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/estates" element={<EstatesListPage />} />
         <Route path="/estates/:id" element={<EstateDetailPage />} />
+        <Route path="/estates/:estateId/stages/:stageId" element={<StageDetailPage />} />
       </Route>
 
       <Route

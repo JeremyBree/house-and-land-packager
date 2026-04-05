@@ -60,9 +60,19 @@ TEST_USERS = {
 
 @pytest.fixture(autouse=True)
 def _truncate_tables(engine: Engine):
-    """Wipe Sprint 1 tables before each integration test for isolation."""
+    """Wipe Sprint 1+2 tables before each integration test for isolation."""
     with engine.begin() as conn:
-        for table in ("user_roles", "profiles", "estates", "developers", "regions"):
+        for table in (
+            "user_roles",
+            "profiles",
+            "status_history",
+            "stage_lots",
+            "estate_documents",
+            "estate_stages",
+            "estates",
+            "developers",
+            "regions",
+        ):
             conn.exec_driver_sql(f"DELETE FROM {table}")
     yield
 
@@ -283,3 +293,99 @@ def sample_data(_session_factory):
         }
     finally:
         session.close()
+
+
+# -----------------------------------------------------------------------------
+# Sprint 2 fixtures: stages, lots, storage isolation, upload helpers.
+# -----------------------------------------------------------------------------
+
+
+@pytest.fixture()
+def sample_stages_and_lots(_session_factory, sample_data):
+    """Seed 2 stages under the first estate, each with 5 lots of varied statuses."""
+    from hlp.models.enums import LotStatus, Source
+    from hlp.models.estate_stage import EstateStage
+    from hlp.models.stage_lot import StageLot
+
+    session: Session = _session_factory()
+    try:
+        estate_id = sample_data["estates"][0]["estate_id"]
+        stage_a = EstateStage(estate_id=estate_id, name="Stage 1")
+        stage_b = EstateStage(estate_id=estate_id, name="Stage 2")
+        session.add_all([stage_a, stage_b])
+        session.flush()
+
+        statuses = [
+            LotStatus.AVAILABLE,
+            LotStatus.AVAILABLE,
+            LotStatus.HOLD,
+            LotStatus.SOLD,
+            LotStatus.UNAVAILABLE,
+        ]
+        stage_a_lots = []
+        stage_b_lots = []
+        for i, st in enumerate(statuses, start=1):
+            lot_a = StageLot(
+                stage_id=stage_a.stage_id,
+                lot_number=f"A{i}",
+                status=st,
+                source=Source.MANUAL,
+            )
+            lot_b = StageLot(
+                stage_id=stage_b.stage_id,
+                lot_number=f"B{i}",
+                status=st,
+                source=Source.MANUAL,
+            )
+            session.add_all([lot_a, lot_b])
+            stage_a_lots.append(lot_a)
+            stage_b_lots.append(lot_b)
+        session.commit()
+
+        return {
+            "estate_id": estate_id,
+            "stage_a_id": stage_a.stage_id,
+            "stage_b_id": stage_b.stage_id,
+            "stage_a_lot_ids": [lot.lot_id for lot in stage_a_lots],
+            "stage_b_lot_ids": [lot.lot_id for lot in stage_b_lots],
+            "statuses": [s.value for s in statuses],
+        }
+    finally:
+        session.close()
+
+
+@pytest.fixture()
+def tmp_storage(tmp_path, monkeypatch):
+    """Redirect the default StorageService to a temporary directory for this test."""
+    from hlp.shared import storage_service as ss
+
+    new_service = ss.StorageService(base_path=str(tmp_path))
+    monkeypatch.setattr(ss, "_default_service", new_service)
+
+    yield tmp_path
+
+    monkeypatch.setattr(ss, "_default_service", None)
+
+
+def upload_file(
+    client: TestClient,
+    estate_id: int,
+    filename: str,
+    content_type: str,
+    content: bytes,
+    headers: dict[str, str] | None = None,
+    stage_id: int | None = None,
+    description: str | None = None,
+):
+    """Helper: POST a document to the estate upload endpoint."""
+    params = []
+    if stage_id is not None:
+        params.append(f"stage_id={stage_id}")
+    if description is not None:
+        params.append(f"description={description}")
+    suffix = ("?" + "&".join(params)) if params else ""
+    return client.post(
+        f"/api/estates/{estate_id}/documents{suffix}",
+        files={"file": (filename, content, content_type)},
+        headers=headers or {},
+    )
