@@ -8,6 +8,7 @@ import ForbiddenPage from '@/pages/ForbiddenPage'
 import EstatesListPage from '@/pages/estates/EstatesListPage'
 import EstateDetailPage from '@/pages/estates/EstateDetailPage'
 import StageDetailPage from '@/pages/stages/StageDetailPage'
+import LsiPage from '@/pages/lsi/LsiPage'
 import UsersPage from '@/pages/admin/UsersPage'
 import RegionsPage from '@/pages/admin/RegionsPage'
 import DevelopersPage from '@/pages/admin/DevelopersPage'
@@ -30,6 +31,7 @@ export function AppRoutes() {
         <Route path="/estates" element={<EstatesListPage />} />
         <Route path="/estates/:id" element={<EstateDetailPage />} />
         <Route path="/estates/:estateId/stages/:stageId" element={<StageDetailPage />} />
+        <Route path="/lsi" element={<LsiPage />} />
       </Route>
 
       <Route

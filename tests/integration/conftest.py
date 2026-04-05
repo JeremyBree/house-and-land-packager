@@ -63,6 +63,7 @@ def _truncate_tables(engine: Engine):
     """Wipe Sprint 1+2 tables before each integration test for isolation."""
     with engine.begin() as conn:
         for table in (
+            "filter_presets",
             "user_roles",
             "profiles",
             "status_history",
@@ -365,6 +366,210 @@ def tmp_storage(tmp_path, monkeypatch):
     yield tmp_path
 
     monkeypatch.setattr(ss, "_default_service", None)
+
+
+SECOND_USER = {
+    "email": "second@it.example.com",
+    "password": "Second1234!",
+    "first_name": "Second",
+    "last_name": "User",
+    "job_title": "Sales",
+    "roles": [UserRoleType.SALES],
+}
+
+
+@pytest.fixture()
+def second_user(_session_factory):
+    """Create a second user for isolation tests (independent of seeded_users)."""
+    session: Session = _session_factory()
+    try:
+        profile = user_service.create_user_with_roles(
+            session,
+            email=SECOND_USER["email"],
+            password=SECOND_USER["password"],
+            first_name=SECOND_USER["first_name"],
+            last_name=SECOND_USER["last_name"],
+            job_title=SECOND_USER["job_title"],
+            roles=SECOND_USER["roles"],
+        )
+        session.commit()
+        return {
+            "profile_id": profile.profile_id,
+            "email": profile.email,
+            "password": SECOND_USER["password"],
+        }
+    finally:
+        session.close()
+
+
+@pytest.fixture()
+def second_user_token(client: TestClient, second_user) -> str:
+    return _login(client, second_user["email"], second_user["password"])
+
+
+@pytest.fixture()
+def second_user_headers(second_user_token: str) -> dict[str, str]:
+    return auth_header(second_user_token)
+
+
+# -----------------------------------------------------------------------------
+# Sprint 3 fixtures: richer dataset for Land Search Interface tests.
+# -----------------------------------------------------------------------------
+
+
+@pytest.fixture()
+def search_seed_data(_session_factory):
+    """Seed 3 estates (2 VIC, 1 NSW) x 2 stages x 5 lots with varied attributes."""
+    from datetime import date
+    from decimal import Decimal
+
+    from hlp.models.developer import Developer
+    from hlp.models.enums import LotStatus, Source
+    from hlp.models.estate import Estate
+    from hlp.models.estate_stage import EstateStage
+    from hlp.models.region import Region
+    from hlp.models.stage_lot import StageLot
+
+    session: Session = _session_factory()
+    try:
+        region_metro = Region(name="Metro")
+        region_growth = Region(name="Growth Corridor")
+        session.add_all([region_metro, region_growth])
+        session.flush()
+
+        dev_alpha = Developer(developer_name="AlphaDev")
+        dev_beta = Developer(developer_name="BetaBuild")
+        session.add_all([dev_alpha, dev_beta])
+        session.flush()
+
+        estate_a = Estate(
+            developer_id=dev_alpha.developer_id,
+            region_id=region_metro.region_id,
+            estate_name="Acacia Rise",
+            suburb="Tarneit",
+            state="VIC",
+            postcode="3029",
+            active=True,
+        )
+        estate_b = Estate(
+            developer_id=dev_alpha.developer_id,
+            region_id=region_growth.region_id,
+            estate_name="Banksia Park",
+            suburb="Werribee",
+            state="VIC",
+            postcode="3030",
+            active=True,
+        )
+        estate_c = Estate(
+            developer_id=dev_beta.developer_id,
+            region_id=region_growth.region_id,
+            estate_name="Cedar Grove",
+            suburb="Oran Park",
+            state="NSW",
+            postcode="2570",
+            active=True,
+        )
+        session.add_all([estate_a, estate_b, estate_c])
+        session.flush()
+
+        statuses_cycle = [
+            LotStatus.AVAILABLE,
+            LotStatus.AVAILABLE,
+            LotStatus.HOLD,
+            LotStatus.SOLD,
+            LotStatus.UNAVAILABLE,
+        ]
+
+        estates = [
+            ("A", estate_a),
+            ("B", estate_b),
+            ("C", estate_c),
+        ]
+        lot_ids_by_status: dict[str, list[int]] = {s.value: [] for s in LotStatus}
+        all_lot_ids: list[int] = []
+        stage_ids: list[int] = []
+        for letter, estate in estates:
+            for stage_num in (1, 2):
+                stage = EstateStage(
+                    estate_id=estate.estate_id, name=f"Stage {stage_num}"
+                )
+                session.add(stage)
+                session.flush()
+                stage_ids.append(stage.stage_id)
+                price_options = [
+                    Decimal("300000.00"),
+                    Decimal("350000.00"),
+                    Decimal("400000.00"),
+                    Decimal("450000.00"),
+                    None,
+                ]
+                size_options = [
+                    Decimal("350.00"),
+                    Decimal("400.00"),
+                    Decimal("450.00"),
+                    Decimal("500.00"),
+                    Decimal("550.00"),
+                ]
+                frontage_options = [
+                    Decimal("10.00"),
+                    Decimal("12.50"),
+                    Decimal("14.00"),
+                    Decimal("16.00"),
+                    Decimal("18.00"),
+                ]
+                depth_options = [
+                    Decimal("28.00"),
+                    Decimal("30.00"),
+                    Decimal("32.00"),
+                    Decimal("34.00"),
+                    Decimal("36.00"),
+                ]
+                title_dates = [
+                    date(2026, 3, 1),
+                    date(2026, 6, 1),
+                    date(2026, 9, 1),
+                    date(2026, 12, 1),
+                    date(2027, 3, 1),
+                ]
+                for i in range(5):
+                    lot = StageLot(
+                        stage_id=stage.stage_id,
+                        lot_number=f"{letter}{stage_num}-{i + 1}",
+                        frontage=frontage_options[i],
+                        depth=depth_options[i],
+                        size_sqm=size_options[i],
+                        corner_block=(i == 0),
+                        land_price=price_options[i],
+                        status=statuses_cycle[i],
+                        source=Source.MANUAL,
+                        title_date=title_dates[i],
+                    )
+                    session.add(lot)
+                    session.flush()
+                    lot_ids_by_status[statuses_cycle[i].value].append(lot.lot_id)
+                    all_lot_ids.append(lot.lot_id)
+        session.commit()
+
+        return {
+            "regions": {
+                "metro": region_metro.region_id,
+                "growth": region_growth.region_id,
+            },
+            "developers": {
+                "alpha": dev_alpha.developer_id,
+                "beta": dev_beta.developer_id,
+            },
+            "estates": {
+                "acacia": estate_a.estate_id,
+                "banksia": estate_b.estate_id,
+                "cedar": estate_c.estate_id,
+            },
+            "stage_ids": stage_ids,
+            "total_lots": len(all_lot_ids),
+            "lot_ids_by_status": lot_ids_by_status,
+        }
+    finally:
+        session.close()
 
 
 def upload_file(

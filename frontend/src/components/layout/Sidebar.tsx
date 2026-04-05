@@ -26,7 +26,7 @@ const mainNav: NavItem[] = [
   { to: '/estates', label: 'Estates', icon: Building2 },
   { to: '/packages', label: 'Packages', icon: Package, disabled: true, tooltip: 'Coming soon' },
   { to: '/pricing-requests', label: 'Pricing Requests', icon: FileText, disabled: true, tooltip: 'Coming soon' },
-  { to: '/lsi', label: 'Land Search', icon: Search, disabled: true, tooltip: 'Coming soon' },
+  { to: '/lsi', label: 'Land Search', icon: Search },
 ]
 
 const adminNav: NavItem[] = [

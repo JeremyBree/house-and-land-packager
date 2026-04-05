@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from sqlalchemy import ForeignKey, String, UniqueConstraint
+from sqlalchemy import JSON, ForeignKey, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -21,4 +21,6 @@ class FilterPreset(Base, TimestampMixin):
         ForeignKey("profiles.profile_id"), nullable=False, index=True
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    filters: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    filters: Mapped[dict[str, Any]] = mapped_column(
+        JSONB().with_variant(JSON(), "sqlite"), default=dict, nullable=False
+    )

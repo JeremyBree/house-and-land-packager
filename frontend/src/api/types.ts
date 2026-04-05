@@ -233,3 +233,75 @@ export interface ErrorResponse {
   detail: string
   code?: string
 }
+
+export interface LotSearchFilters {
+  estate_ids?: number[] | null
+  developer_ids?: number[] | null
+  region_ids?: number[] | null
+  suburbs?: string[] | null
+  statuses?: LotStatus[] | null
+  price_min?: string | null
+  price_max?: string | null
+  size_min?: string | null
+  size_max?: string | null
+  frontage_min?: string | null
+  depth_min?: string | null
+  corner_block?: boolean | null
+  title_date_from?: string | null
+  title_date_to?: string | null
+  exclude_null_price?: boolean
+  text_search?: string | null
+}
+
+export type LotSearchSortBy =
+  | 'land_price'
+  | 'size_sqm'
+  | 'frontage'
+  | 'lot_number'
+  | 'estate_name'
+  | 'last_confirmed_date'
+
+export interface LotSearchRequest {
+  filters: LotSearchFilters
+  page: number
+  size: number
+  sort_by: LotSearchSortBy
+  sort_desc: boolean
+}
+
+export interface LotSearchResult extends LotRead {
+  estate_name: string
+  estate_suburb: string | null
+  estate_state: string | null
+  developer_name: string
+  region_name: string | null
+  stage_name: string
+}
+
+export interface LotSearchResponse {
+  items: LotSearchResult[]
+  total: number
+  page: number
+  size: number
+  pages: number
+  filter_summary: Record<string, unknown>
+}
+
+export interface FilterPresetRead {
+  preset_id: number
+  profile_id: number
+  name: string
+  filters: LotSearchFilters
+  created_at: string
+  updated_at: string
+}
+
+export interface FilterPresetCreate {
+  name: string
+  filters: LotSearchFilters
+}
+
+export interface FilterPresetUpdate {
+  name?: string
+  filters?: LotSearchFilters
+}
