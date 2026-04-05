@@ -1,0 +1,1307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LandSearch — Internal Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy: #0f1f3d;
+  --navy-mid: #162a50;
+  --navy-light: #1e3a6e;
+  --blue: #2563eb;
+  --blue-light: #3b82f6;
+  --blue-pale: #eff6ff;
+  --teal: #0ea5e9;
+  --green: #16a34a;
+  --green-bg: #f0fdf4;
+  --amber: #d97706;
+  --amber-bg: #fffbeb;
+  --orange: #ea580c;
+  --orange-bg: #fff7ed;
+  --red: #dc2626;
+  --red-bg: #fef2f2;
+  --grey: #6b7280;
+  --grey-bg: #f3f4f6;
+  --border: #e2e8f0;
+  --text: #0f172a;
+  --text-muted: #64748b;
+  --bg: #f8fafc;
+  --white: #ffffff;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+  --radius: 8px;
+  --font: 'DM Sans', sans-serif;
+  --mono: 'DM Mono', monospace;
+  --filter-width: 280px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* HEADER */
+.header {
+  background: var(--navy);
+  color: white;
+  padding: 0 24px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+}
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: -0.3px;
+}
+.logo-icon {
+  width: 28px; height: 28px;
+  background: linear-gradient(135deg, var(--blue-light), var(--teal));
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+}
+.logo span { opacity: 0.7; font-weight: 400; }
+.header-right {
+  display: flex; align-items: center; gap: 16px;
+  font-size: 12px; opacity: 0.7;
+}
+.header-right .refresh { 
+  display: flex; align-items: center; gap: 5px;
+}
+.dot { width: 6px; height: 6px; border-radius: 50%; background: #4ade80; display: inline-block; }
+.avatar {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--blue), var(--teal));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 600; color: white;
+}
+
+/* LAYOUT */
+.app-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  height: calc(100vh - 56px);
+}
+
+/* FILTER PANEL */
+.filter-panel {
+  width: var(--filter-width);
+  min-width: var(--filter-width);
+  background: var(--white);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+.filter-header {
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  background: var(--white);
+  z-index: 10;
+}
+.filter-title {
+  font-weight: 600;
+  font-size: 13px;
+  display: flex; align-items: center; gap: 8px;
+}
+.active-badge {
+  background: var(--blue);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-family: var(--mono);
+}
+.reset-btn {
+  font-size: 12px;
+  color: var(--blue);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font);
+  font-weight: 500;
+  padding: 3px 6px;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+.reset-btn:hover { background: var(--blue-pale); }
+
+.filter-section {
+  border-bottom: 1px solid var(--border);
+}
+.filter-section-header {
+  padding: 10px 16px;
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  user-select: none;
+  transition: background 0.12s;
+}
+.filter-section-header:hover { background: var(--bg); }
+.chevron { 
+  font-size: 10px; 
+  transition: transform 0.2s;
+  color: var(--text-muted);
+}
+.filter-section.collapsed .chevron { transform: rotate(-90deg); }
+.filter-section.collapsed .filter-body { display: none; }
+.filter-body { padding: 8px 16px 14px; }
+
+label.filter-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-bottom: 5px;
+  margin-top: 10px;
+}
+label.filter-label:first-child { margin-top: 0; }
+
+.filter-input {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: var(--font);
+  font-size: 13px;
+  color: var(--text);
+  background: var(--white);
+  transition: border-color 0.15s, box-shadow 0.15s;
+  outline: none;
+}
+.filter-input:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.08);
+}
+.filter-input::placeholder { color: #c4cdd6; }
+
+.input-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.input-prefix-wrap {
+  position: relative;
+}
+.input-prefix {
+  position: absolute;
+  left: 9px; top: 50%; transform: translateY(-50%);
+  font-size: 12px; color: var(--text-muted); pointer-events: none;
+  font-family: var(--mono);
+}
+.input-prefix-wrap .filter-input { padding-left: 22px; }
+
+/* Range slider */
+.range-wrap { padding: 4px 0 2px; }
+.range-row { display: flex; gap: 6px; align-items: center; margin-top: 8px; }
+.range-row .filter-input { font-family: var(--mono); font-size: 12px; }
+
+/* Checkbox group */
+.checkbox-group { display: flex; flex-direction: column; gap: 7px; }
+.checkbox-item {
+  display: flex; align-items: center; gap: 8px;
+  cursor: pointer; font-size: 13px;
+}
+.checkbox-item input[type="checkbox"] {
+  width: 15px; height: 15px;
+  accent-color: var(--blue);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* Select */
+.filter-select {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: var(--font);
+  font-size: 13px;
+  background: var(--white);
+  color: var(--text);
+  outline: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px;
+}
+.filter-select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,0.08); }
+
+/* MAIN CONTENT */
+.main-content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 24px;
+  gap: 14px;
+}
+
+/* SEARCH BAR */
+.search-wrap {
+  position: relative;
+}
+.search-icon {
+  position: absolute;
+  left: 12px; top: 50%; transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+  font-size: 15px;
+}
+.search-input {
+  width: 100%;
+  padding: 10px 14px 10px 38px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: var(--font);
+  font-size: 14px;
+  background: var(--white);
+  color: var(--text);
+  box-shadow: var(--shadow);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.search-input:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+}
+.search-input::placeholder { color: #b0bec9; }
+
+/* RESULTS BAR */
+.results-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.results-count {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.results-count strong { color: var(--text); font-weight: 600; }
+.results-actions { display: flex; gap: 8px; }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px;
+  border-radius: 6px;
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: background 0.15s, transform 0.1s;
+}
+.btn:active { transform: scale(0.98); }
+.btn-outline {
+  background: var(--white);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+.btn-outline:hover { background: var(--bg); border-color: #c8d4e0; }
+.btn-primary {
+  background: var(--blue);
+  color: white;
+}
+.btn-primary:hover { background: #1d4ed8; }
+.btn-icon { font-size: 14px; }
+
+/* TABLE */
+.table-container {
+  flex: 1;
+  overflow: auto;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+thead {
+  background: var(--navy);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+th {
+  padding: 11px 14px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 11px;
+  color: rgba(255,255,255,0.75);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.15s;
+}
+th:hover { color: white; }
+th .sort-indicator { 
+  margin-left: 4px; 
+  opacity: 0.4; 
+  font-size: 10px;
+}
+th.sorted { color: white; }
+th.sorted .sort-indicator { opacity: 1; color: var(--teal); }
+
+tbody tr {
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.1s;
+  cursor: pointer;
+}
+tbody tr:hover { background: #f8fbff; }
+tbody tr.stale { opacity: 0.7; }
+tbody tr:last-child { border-bottom: none; }
+
+td {
+  padding: 10px 14px;
+  color: var(--text);
+  white-space: nowrap;
+}
+td.wrap { white-space: normal; min-width: 120px; }
+.td-estate { font-weight: 600; color: var(--navy-mid); }
+.td-price { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--text); }
+.td-dim { font-family: var(--mono); font-size: 12px; color: var(--text-muted); }
+.td-date { font-family: var(--mono); font-size: 12px; }
+
+/* STATUS BADGES */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.badge-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+.badge-available { background: var(--green-bg); color: var(--green); }
+.badge-available .badge-dot { background: var(--green); }
+.badge-hold { background: var(--amber-bg); color: var(--amber); }
+.badge-hold .badge-dot { background: var(--amber); }
+.badge-deposit { background: var(--orange-bg); color: var(--orange); }
+.badge-deposit .badge-dot { background: var(--orange); }
+.badge-sold { background: var(--red-bg); color: var(--red); }
+.badge-sold .badge-dot { background: var(--red); }
+.badge-unavailable { background: var(--grey-bg); color: var(--grey); }
+.badge-unavailable .badge-dot { background: var(--grey); }
+
+.stale-flag {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 10px; color: var(--amber); font-weight: 500;
+}
+
+/* SOURCE BADGE */
+.source-tag {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.source-email { background: #fdf4ff; color: #9333ea; }
+.source-portal { background: #f0f9ff; color: #0369a1; }
+.source-website { background: #f0fdf4; color: #15803d; }
+.source-pdf { background: #fff7ed; color: #c2410c; }
+
+/* PAGINATION */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0 0;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.page-info { font-size: 12px; color: var(--text-muted); }
+.page-controls { display: flex; gap: 4px; align-items: center; }
+.page-btn {
+  min-width: 32px; height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  background: var(--white);
+  border-radius: 5px;
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--text);
+  transition: background 0.12s, border-color 0.12s;
+  display: flex; align-items: center; justify-content: center;
+}
+.page-btn:hover:not(:disabled) { background: var(--blue-pale); border-color: var(--blue); color: var(--blue); }
+.page-btn.active { background: var(--blue); border-color: var(--blue); color: white; }
+.page-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.per-page-select {
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  font-family: var(--font);
+  font-size: 12px;
+  color: var(--text);
+  cursor: pointer;
+  background: var(--white);
+}
+
+/* MODAL */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(15,31,61,0.5);
+  z-index: 200;
+  display: flex; align-items: center; justify-content: flex-end;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.2s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal-panel {
+  width: 480px;
+  max-width: 95vw;
+  height: 100%;
+  background: var(--white);
+  overflow-y: auto;
+  box-shadow: -4px 0 24px rgba(0,0,0,0.15);
+  transform: translateX(40px);
+  transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
+}
+.modal-overlay.open .modal-panel { transform: translateX(0); }
+.modal-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0;
+  background: var(--white);
+  z-index: 5;
+  display: flex; align-items: flex-start; justify-content: space-between;
+}
+.modal-title { font-size: 17px; font-weight: 700; color: var(--navy); }
+.modal-subtitle { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.modal-close {
+  width: 32px; height: 32px;
+  border: none; background: var(--bg); border-radius: 6px;
+  cursor: pointer; font-size: 16px; color: var(--text-muted);
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.12s, color 0.12s;
+}
+.modal-close:hover { background: var(--grey-bg); color: var(--text); }
+.modal-body { padding: 20px 24px; }
+.detail-section { margin-bottom: 20px; }
+.detail-section-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 16px;
+}
+.detail-item label {
+  display: block;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+  font-weight: 500;
+}
+.detail-item .val {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.detail-item .val.mono { font-family: var(--mono); font-size: 13px; }
+.detail-item .val.lg { font-size: 18px; color: var(--blue); }
+
+/* EMPTY STATE */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: var(--text-muted);
+  gap: 12px;
+}
+.empty-icon { font-size: 36px; opacity: 0.3; }
+.empty-title { font-size: 15px; font-weight: 600; color: var(--text-muted); }
+.empty-msg { font-size: 13px; max-width: 280px; text-align: center; line-height: 1.6; }
+
+/* MOBILE FILTER BTN */
+.mobile-filter-btn {
+  display: none;
+  position: fixed;
+  bottom: 24px; left: 50%; transform: translateX(-50%);
+  z-index: 150;
+  background: var(--navy);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 30px;
+  border: none;
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(15,31,61,0.35);
+  gap: 8px;
+  align-items: center;
+}
+
+@media (max-width: 900px) {
+  .filter-panel {
+    position: fixed;
+    left: 0; top: 56px; bottom: 0;
+    z-index: 90;
+    transform: translateX(-100%);
+    transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
+    box-shadow: 4px 0 20px rgba(0,0,0,0.15);
+  }
+  .filter-panel.open { transform: translateX(0); }
+  .mobile-filter-btn { display: flex; }
+  .main-content { padding: 14px 14px 80px; }
+}
+
+/* TOAST */
+.toast {
+  position: fixed;
+  bottom: 24px; right: 24px;
+  background: var(--navy);
+  color: white;
+  padding: 12px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: var(--shadow-md);
+  z-index: 300;
+  transform: translateY(80px);
+  opacity: 0;
+  transition: transform 0.25s, opacity 0.25s;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="logo">
+    <div class="logo-icon">⬡</div>
+    LandSearch <span>/ Internal</span>
+  </div>
+  <div class="header-right">
+    <div class="refresh">
+      <span class="dot"></span> Data refreshed 43 min ago
+    </div>
+    <div class="avatar">SC</div>
+  </div>
+</header>
+
+<div class="app-body">
+  <!-- FILTER PANEL -->
+  <aside class="filter-panel" id="filterPanel">
+    <div class="filter-header">
+      <div class="filter-title">
+        Filters
+        <span class="active-badge" id="activeBadge" style="display:none">0</span>
+      </div>
+      <button class="reset-btn" onclick="resetFilters()">Reset all</button>
+    </div>
+
+    <!-- ESTATE -->
+    <div class="filter-section" id="sec-estate">
+      <div class="filter-section-header" onclick="toggleSection('sec-estate')">
+        Estate <span class="chevron">▾</span>
+      </div>
+      <div class="filter-body">
+        <select class="filter-select" id="f-estate" onchange="applyFilters()" size="1">
+          <option value="">All estates</option>
+          <option>Clyde Creek Estate</option>
+          <option>Riverwalk</option>
+          <option>Botanica</option>
+          <option>Grandview</option>
+          <option>Evergreen Heights</option>
+          <option>Merrifield</option>
+          <option>Wyndham Vale Estate</option>
+          <option>Aspire</option>
+          <option>The Grange</option>
+          <option>Sienna</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- REGION -->
+    <div class="filter-section" id="sec-region">
+      <div class="filter-section-header" onclick="toggleSection('sec-region')">
+        Region / Suburb <span class="chevron">▾</span>
+      </div>
+      <div class="filter-body">
+        <select class="filter-select" id="f-region" onchange="applyFilters()">
+          <option value="">All regions</option>
+          <option>Clyde</option>
+          <option>Clyde North</option>
+          <option>Cranbourne</option>
+          <option>Officer</option>
+          <option>Pakenham</option>
+          <option>Werribee</option>
+          <option>Wyndham Vale</option>
+          <option>Mickleham</option>
+          <option>Donnybrook</option>
+          <option>Mambourin</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- PRICE -->
+    <div class="filter-section" id="sec-price">
+      <div class="filter-section-header" onclick="toggleSection('sec-price')">
+        Price Range <span class="chevron">▾</span>
+      </div>
+      <div class="filter-body">
+        <label class="filter-label">Min price</label>
+        <div class="input-prefix-wrap">
+          <span class="input-prefix">$</span>
+          <input type="number" class="filter-input" id="f-price-min" placeholder="0" min="0" step="5000" oninput="applyFilters()">
+        </div>
+        <label class="filter-label">Max price</label>
+        <div class="input-prefix-wrap">
+          <span class="input-prefix">$</span>
+          <input type="number" class="filter-input" id="f-price-max" placeholder="Any" min="0" step="5000" oninput="applyFilters()">
+        </div>
+      </div>
+    </div>
+
+    <!-- SIZE -->
+    <div class="filter-section" id="sec-size">
+      <div class="filter-section-header" onclick="toggleSection('sec-size')">
+        Lot Size (m²) <span class="chevron">▾</span>
+      </div>
+      <div class="filter-body">
+        <div class="input-row">
+          <div>
+            <label class="filter-label">Min</label>
+            <input type="number" class="filter-input" id="f-size-min" placeholder="0" min="0" oninput="applyFilters()">
+          </div>
+          <div>
+            <label class="filter-label">Max</label>
+            <input type="number" class="filter-input" id="f-size-max" placeholder="Any" min="0" oninput="applyFilters()">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DIMENSIONS -->
+    <div class="filter-section" id="sec-dims">
+      <div class="filter-section-header" onclick="toggleSection('sec-dims')">
+        Dimensions <span class="chevron">▾</span>
+      </div>
+      <div class="filter-body">
+        <label class="filter-label">Min frontage (m)</label>
+        <input type="number" class="filter-input" id="f-frontage" placeholder="e.g. 12.5" min="0" step="0.5" oninput="applyFilters()">
+        <label class="filter-label">Min depth (m)</label>
+        <input type="number" class="filter-input" id="f-depth" placeholder="e.g. 25" min="0" step="0.5" oninput="applyFilters()">
+      </div>
+    </div>
+
+    <!-- STATUS -->
+    <div class="filter-section" id="sec-status">
+      <div class="filter-section-header" onclick="toggleSection('sec-status')">
+        Status <span class="chevron">▾</span>
+      </div>
+      <div class="filter-body">
+        <div class="checkbox-group">
+          <label class="checkbox-item">
+            <input type="checkbox" id="s-available" checked onchange="applyFilters()">
+            <span class="badge badge-available"><span class="badge-dot"></span>Available</span>
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" id="s-hold" onchange="applyFilters()">
+            <span class="badge badge-hold"><span class="badge-dot"></span>Hold</span>
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" id="s-deposit" onchange="applyFilters()">
+            <span class="badge badge-deposit"><span class="badge-dot"></span>Deposit Taken</span>
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" id="s-sold" onchange="applyFilters()">
+            <span class="badge badge-sold"><span class="badge-dot"></span>Sold</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- TITLE DATE -->
+    <div class="filter-section" id="sec-title">
+      <div class="filter-section-header" onclick="toggleSection('sec-title')">
+        Title Date <span class="chevron">▾</span>
+      </div>
+      <div class="filter-body">
+        <label class="filter-label">From</label>
+        <input type="date" class="filter-input" id="f-title-from" onchange="applyFilters()">
+        <label class="filter-label">To</label>
+        <input type="date" class="filter-input" id="f-title-to" onchange="applyFilters()">
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" class="search-input" id="searchInput" placeholder="Search estate, lot, suburb, developer…" oninput="debounceSearch()">
+    </div>
+
+    <div class="results-bar">
+      <div class="results-count">
+        Showing <strong id="resultCount">0</strong> of <strong id="totalCount">0</strong> lots
+      </div>
+      <div class="results-actions">
+        <button class="btn btn-outline" onclick="exportCSV()">
+          <span class="btn-icon">↓</span> Export CSV
+        </button>
+      </div>
+    </div>
+
+    <div class="table-container" id="tableContainer">
+      <table id="lotsTable">
+        <thead>
+          <tr>
+            <th onclick="sortBy('estate')" id="th-estate">Estate <span class="sort-indicator">↕</span></th>
+            <th onclick="sortBy('stage')" id="th-stage">Stage <span class="sort-indicator">↕</span></th>
+            <th onclick="sortBy('lot')" id="th-lot">Lot <span class="sort-indicator">↕</span></th>
+            <th onclick="sortBy('price')" id="th-price" class="sorted">Price <span class="sort-indicator">↑</span></th>
+            <th onclick="sortBy('frontage')" id="th-frontage">Front <span class="sort-indicator">↕</span></th>
+            <th onclick="sortBy('depth')" id="th-depth">Depth <span class="sort-indicator">↕</span></th>
+            <th onclick="sortBy('size')" id="th-size">Size m² <span class="sort-indicator">↕</span></th>
+            <th onclick="sortBy('titleDate')" id="th-titleDate">Title Date <span class="sort-indicator">↕</span></th>
+            <th onclick="sortBy('status')" id="th-status">Status <span class="sort-indicator">↕</span></th>
+            <th onclick="sortBy('source')" id="th-source">Source <span class="sort-indicator">↕</span></th>
+            <th onclick="sortBy('lastConfirmed')" id="th-lastConfirmed">Last Confirmed <span class="sort-indicator">↕</span></th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+      <div class="empty-state" id="emptyState" style="display:none">
+        <div class="empty-icon">🔎</div>
+        <div class="empty-title">No lots found</div>
+        <div class="empty-msg">No lots match your current filters. Try adjusting your search criteria or resetting all filters.</div>
+      </div>
+    </div>
+
+    <div class="pagination">
+      <div class="page-info">
+        Page <span id="currentPage">1</span> of <span id="totalPages">1</span>
+        &nbsp;·&nbsp;
+        <select class="per-page-select" id="perPageSelect" onchange="changePerPage()">
+          <option value="25">25 / page</option>
+          <option value="50">50 / page</option>
+          <option value="100">100 / page</option>
+        </select>
+      </div>
+      <div class="page-controls" id="pageControls"></div>
+    </div>
+  </main>
+</div>
+
+<!-- Mobile filter button -->
+<button class="mobile-filter-btn" onclick="toggleMobileFilters()">
+  ⚙ Filters <span id="mobileBadge" style="display:none; background:var(--blue); padding:1px 7px; border-radius:10px; font-size:11px"></span>
+</button>
+
+<!-- Lot Detail Modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal-panel" id="modalPanel">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="modalTitle">—</div>
+        <div class="modal-subtitle" id="modalSubtitle">—</div>
+      </div>
+      <button class="modal-close" onclick="closeModalDirect()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// SAMPLE DATA
+// ============================================================
+const TODAY = new Date();
+function daysAgo(n) {
+  const d = new Date(TODAY);
+  d.setDate(d.getDate() - n);
+  return d.toISOString().split('T')[0];
+}
+function monthsLater(n) {
+  const d = new Date(TODAY);
+  d.setMonth(d.getMonth() + n);
+  return d.toISOString().split('T')[0];
+}
+
+const SAMPLE_LOTS = [
+  { id:1, estate:'Clyde Creek Estate', developer:'Stockland', suburb:'Clyde', stage:'3', lot:'301', price:310000, frontage:12.5, depth:28, size:350, titleDate:monthsLater(4), status:'Available', source:'portal', sourceDetail:'https://developer-portal.example.com', lastConfirmed:daysAgo(1) },
+  { id:2, estate:'Clyde Creek Estate', developer:'Stockland', suburb:'Clyde', stage:'3', lot:'302', price:325000, frontage:14, depth:28, size:392, titleDate:monthsLater(4), status:'Available', source:'email', sourceDetail:'updates@stockland.com.au', lastConfirmed:daysAgo(0) },
+  { id:3, estate:'Clyde Creek Estate', developer:'Stockland', suburb:'Clyde', stage:'3', lot:'305', price:298000, frontage:10, depth:30, size:300, titleDate:monthsLater(5), status:'Hold', source:'portal', sourceDetail:'https://developer-portal.example.com', lastConfirmed:daysAgo(2) },
+  { id:4, estate:'Riverwalk', developer:'Peet Limited', suburb:'Officer', stage:'7', lot:'701', price:345000, frontage:16, depth:32, size:512, titleDate:monthsLater(6), status:'Available', source:'website', sourceDetail:'https://riverwalk.com.au/lots', lastConfirmed:daysAgo(0) },
+  { id:5, estate:'Riverwalk', developer:'Peet Limited', suburb:'Officer', stage:'7', lot:'702', price:362000, frontage:16, depth:32, size:512, titleDate:monthsLater(6), status:'Deposit Taken', source:'website', sourceDetail:'https://riverwalk.com.au/lots', lastConfirmed:daysAgo(0) },
+  { id:6, estate:'Riverwalk', developer:'Peet Limited', suburb:'Officer', stage:'7', lot:'709', price:410000, frontage:20, depth:35, size:700, titleDate:monthsLater(3), status:'Available', source:'pdf', sourceDetail:'Riverwalk_Stage7_PriceList.pdf', lastConfirmed:daysAgo(8) },
+  { id:7, estate:'Botanica', developer:'Villawood', suburb:'Wyndham Vale', stage:'12', lot:'1201', price:275000, frontage:12.5, depth:26, size:325, titleDate:monthsLater(8), status:'Available', source:'email', sourceDetail:'info@villawood.com.au', lastConfirmed:daysAgo(3) },
+  { id:8, estate:'Botanica', developer:'Villawood', suburb:'Wyndham Vale', stage:'12', lot:'1202', price:285000, frontage:12.5, depth:26, size:325, titleDate:monthsLater(8), status:'Available', source:'email', sourceDetail:'info@villawood.com.au', lastConfirmed:daysAgo(3) },
+  { id:9, estate:'Botanica', developer:'Villawood', suburb:'Wyndham Vale', stage:'12', lot:'1205', price:330000, frontage:16, depth:28, size:448, titleDate:monthsLater(7), status:'Available', source:'email', sourceDetail:'info@villawood.com.au', lastConfirmed:daysAgo(3) },
+  { id:10, estate:'Grandview', developer:'Metricon Developments', suburb:'Pakenham', stage:'5', lot:'501', price:380000, frontage:18, depth:30, size:540, titleDate:monthsLater(2), status:'Available', source:'portal', sourceDetail:'https://grandview-portal.example.com', lastConfirmed:daysAgo(1) },
+  { id:11, estate:'Grandview', developer:'Metricon Developments', suburb:'Pakenham', stage:'5', lot:'502', price:395000, frontage:18, depth:30, size:540, titleDate:monthsLater(2), status:'Sold', source:'portal', sourceDetail:'https://grandview-portal.example.com', lastConfirmed:daysAgo(1) },
+  { id:12, estate:'Grandview', developer:'Metricon Developments', suburb:'Pakenham', stage:'5', lot:'508', price:445000, frontage:22, depth:32, size:704, titleDate:monthsLater(2), status:'Available', source:'portal', sourceDetail:'https://grandview-portal.example.com', lastConfirmed:daysAgo(1) },
+  { id:13, estate:'Evergreen Heights', developer:'AV Jennings', suburb:'Donnybrook', stage:'2', lot:'201', price:255000, frontage:10, depth:25, size:250, titleDate:monthsLater(10), status:'Available', source:'website', sourceDetail:'https://evergreenheights.com.au', lastConfirmed:daysAgo(10) },
+  { id:14, estate:'Evergreen Heights', developer:'AV Jennings', suburb:'Donnybrook', stage:'2', lot:'214', price:295000, frontage:14, depth:28, size:392, titleDate:monthsLater(9), status:'Available', source:'website', sourceDetail:'https://evergreenheights.com.au', lastConfirmed:daysAgo(10) },
+  { id:15, estate:'Merrifield', developer:'MAB Corporation', suburb:'Mickleham', stage:'9', lot:'901', price:368000, frontage:14, depth:32, size:448, titleDate:monthsLater(5), status:'Available', source:'pdf', sourceDetail:'Merrifield_S9_Feb2026.pdf', lastConfirmed:daysAgo(2) },
+  { id:16, estate:'Merrifield', developer:'MAB Corporation', suburb:'Mickleham', stage:'9', lot:'902', price:390000, frontage:16, depth:32, size:512, titleDate:monthsLater(5), status:'Hold', source:'pdf', sourceDetail:'Merrifield_S9_Feb2026.pdf', lastConfirmed:daysAgo(2) },
+  { id:17, estate:'Merrifield', developer:'MAB Corporation', suburb:'Mickleham', stage:'9', lot:'915', price:425000, frontage:18, depth:35, size:630, titleDate:monthsLater(4), status:'Available', source:'pdf', sourceDetail:'Merrifield_S9_Feb2026.pdf', lastConfirmed:daysAgo(2) },
+  { id:18, estate:'Wyndham Vale Estate', developer:'Development Victoria', suburb:'Werribee', stage:'4', lot:'401', price:248000, frontage:10, depth:25, size:250, titleDate:monthsLater(12), status:'Available', source:'email', sourceDetail:'land@devvic.com.au', lastConfirmed:daysAgo(5) },
+  { id:19, estate:'Wyndham Vale Estate', developer:'Development Victoria', suburb:'Werribee', stage:'4', lot:'403', price:268000, frontage:12.5, depth:26, size:325, titleDate:monthsLater(11), status:'Available', source:'email', sourceDetail:'land@devvic.com.au', lastConfirmed:daysAgo(5) },
+  { id:20, estate:'Aspire', developer:'Mirvac', suburb:'Clyde North', stage:'1', lot:'101', price:312000, frontage:12.5, depth:28, size:350, titleDate:monthsLater(3), status:'Available', source:'portal', sourceDetail:'https://aspire-portal.mirvac.com', lastConfirmed:daysAgo(0) },
+  { id:21, estate:'Aspire', developer:'Mirvac', suburb:'Clyde North', stage:'1', lot:'102', price:335000, frontage:14, depth:30, size:420, titleDate:monthsLater(3), status:'Available', source:'portal', sourceDetail:'https://aspire-portal.mirvac.com', lastConfirmed:daysAgo(0) },
+  { id:22, estate:'Aspire', developer:'Mirvac', suburb:'Clyde North', stage:'1', lot:'115', price:488000, frontage:25, depth:35, size:875, titleDate:monthsLater(3), status:'Available', source:'portal', sourceDetail:'https://aspire-portal.mirvac.com', lastConfirmed:daysAgo(0) },
+  { id:23, estate:'The Grange', developer:'Lend Lease', suburb:'Cranbourne', stage:'6', lot:'601', price:305000, frontage:12.5, depth:27, size:338, titleDate:monthsLater(6), status:'Available', source:'website', sourceDetail:'https://thegrange.com.au/lots', lastConfirmed:daysAgo(4) },
+  { id:24, estate:'Sienna', developer:'PAYCE', suburb:'Mambourin', stage:'3', lot:'301', price:272000, frontage:12.5, depth:25, size:313, titleDate:monthsLater(9), status:'Available', source:'email', sourceDetail:'releases@payce.com.au', lastConfirmed:daysAgo(6) },
+  { id:25, estate:'Sienna', developer:'PAYCE', suburb:'Mambourin', stage:'3', lot:'302', price:285000, frontage:12.5, depth:25, size:313, titleDate:monthsLater(9), status:'Hold', source:'email', sourceDetail:'releases@payce.com.au', lastConfirmed:daysAgo(6) },
+  { id:26, estate:'Botanica', developer:'Villawood', suburb:'Wyndham Vale', stage:'11', lot:'1101', price:262000, frontage:10, depth:25, size:250, titleDate:monthsLater(14), status:'Available', source:'email', sourceDetail:'info@villawood.com.au', lastConfirmed:daysAgo(15) },
+  { id:27, estate:'Riverwalk', developer:'Peet Limited', suburb:'Officer', stage:'6', lot:'612', price:378000, frontage:18, depth:30, size:540, titleDate:monthsLater(1), status:'Deposit Taken', source:'website', sourceDetail:'https://riverwalk.com.au/lots', lastConfirmed:daysAgo(0) },
+  { id:28, estate:'Grandview', developer:'Metricon Developments', suburb:'Pakenham', stage:'4', lot:'422', price:355000, frontage:16, depth:28, size:448, titleDate:monthsLater(3), status:'Available', source:'portal', sourceDetail:'https://grandview-portal.example.com', lastConfirmed:daysAgo(9) },
+];
+
+// ============================================================
+// STATE
+// ============================================================
+let allLots = [...SAMPLE_LOTS];
+let filteredLots = [...allLots];
+let sortField = 'price';
+let sortDir = 'asc';
+let currentPage = 1;
+let perPage = 25;
+let searchTimer = null;
+
+// ============================================================
+// FILTER LOGIC
+// ============================================================
+function applyFilters() {
+  const estate = document.getElementById('f-estate').value;
+  const region = document.getElementById('f-region').value;
+  const priceMin = parseFloat(document.getElementById('f-price-min').value) || 0;
+  const priceMax = parseFloat(document.getElementById('f-price-max').value) || Infinity;
+  const sizeMin = parseFloat(document.getElementById('f-size-min').value) || 0;
+  const sizeMax = parseFloat(document.getElementById('f-size-max').value) || Infinity;
+  const frontageMin = parseFloat(document.getElementById('f-frontage').value) || 0;
+  const depthMin = parseFloat(document.getElementById('f-depth').value) || 0;
+  const titleFrom = document.getElementById('f-title-from').value;
+  const titleTo = document.getElementById('f-title-to').value;
+  const q = document.getElementById('searchInput').value.toLowerCase().trim();
+
+  const statuses = [];
+  if (document.getElementById('s-available').checked) statuses.push('Available');
+  if (document.getElementById('s-hold').checked) statuses.push('Hold');
+  if (document.getElementById('s-deposit').checked) statuses.push('Deposit Taken');
+  if (document.getElementById('s-sold').checked) statuses.push('Sold');
+
+  filteredLots = allLots.filter(lot => {
+    if (estate && lot.estate !== estate) return false;
+    if (region && lot.suburb !== region) return false;
+    if (lot.price < priceMin || lot.price > priceMax) return false;
+    if (lot.size < sizeMin || lot.size > sizeMax) return false;
+    if (lot.frontage < frontageMin) return false;
+    if (lot.depth < depthMin) return false;
+    if (statuses.length > 0 && !statuses.includes(lot.status)) return false;
+    if (titleFrom && lot.titleDate < titleFrom) return false;
+    if (titleTo && lot.titleDate > titleTo) return false;
+    if (q) {
+      const haystack = `${lot.estate} ${lot.lot} ${lot.suburb} ${lot.developer} ${lot.stage}`.toLowerCase();
+      if (!haystack.includes(q)) return false;
+    }
+    return true;
+  });
+
+  updateActiveBadge();
+  currentPage = 1;
+  renderTable();
+}
+
+function updateActiveBadge() {
+  let count = 0;
+  if (document.getElementById('f-estate').value) count++;
+  if (document.getElementById('f-region').value) count++;
+  if (document.getElementById('f-price-min').value) count++;
+  if (document.getElementById('f-price-max').value) count++;
+  if (document.getElementById('f-size-min').value) count++;
+  if (document.getElementById('f-size-max').value) count++;
+  if (document.getElementById('f-frontage').value) count++;
+  if (document.getElementById('f-depth').value) count++;
+  if (document.getElementById('f-title-from').value) count++;
+  if (document.getElementById('f-title-to').value) count++;
+  if (!document.getElementById('s-available').checked) count++;
+  if (document.getElementById('s-hold').checked) count++;
+  if (document.getElementById('s-deposit').checked) count++;
+  if (document.getElementById('s-sold').checked) count++;
+  if (document.getElementById('searchInput').value) count++;
+
+  const badge = document.getElementById('activeBadge');
+  const mbadge = document.getElementById('mobileBadge');
+  if (count > 0) {
+    badge.style.display = 'inline';
+    badge.textContent = count;
+    mbadge.style.display = 'inline';
+    mbadge.textContent = count;
+  } else {
+    badge.style.display = 'none';
+    mbadge.style.display = 'none';
+  }
+}
+
+function resetFilters() {
+  document.getElementById('f-estate').value = '';
+  document.getElementById('f-region').value = '';
+  document.getElementById('f-price-min').value = '';
+  document.getElementById('f-price-max').value = '';
+  document.getElementById('f-size-min').value = '';
+  document.getElementById('f-size-max').value = '';
+  document.getElementById('f-frontage').value = '';
+  document.getElementById('f-depth').value = '';
+  document.getElementById('f-title-from').value = '';
+  document.getElementById('f-title-to').value = '';
+  document.getElementById('searchInput').value = '';
+  document.getElementById('s-available').checked = true;
+  document.getElementById('s-hold').checked = false;
+  document.getElementById('s-deposit').checked = false;
+  document.getElementById('s-sold').checked = false;
+  applyFilters();
+}
+
+function debounceSearch() {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(applyFilters, 300);
+}
+
+// ============================================================
+// SORT
+// ============================================================
+function sortBy(field) {
+  if (sortField === field) {
+    sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortField = field;
+    sortDir = 'asc';
+  }
+  document.querySelectorAll('th').forEach(th => {
+    th.classList.remove('sorted');
+    const si = th.querySelector('.sort-indicator');
+    if (si) si.textContent = '↕';
+  });
+  const th = document.getElementById(`th-${field}`);
+  if (th) {
+    th.classList.add('sorted');
+    th.querySelector('.sort-indicator').textContent = sortDir === 'asc' ? '↑' : '↓';
+  }
+  renderTable();
+}
+
+function getSortedLots() {
+  return [...filteredLots].sort((a, b) => {
+    let va = a[sortField], vb = b[sortField];
+    if (typeof va === 'string') va = va.toLowerCase();
+    if (typeof vb === 'string') vb = vb.toLowerCase();
+    if (va === null || va === undefined) return 1;
+    if (vb === null || vb === undefined) return -1;
+    if (va < vb) return sortDir === 'asc' ? -1 : 1;
+    if (va > vb) return sortDir === 'asc' ? 1 : -1;
+    return 0;
+  });
+}
+
+// ============================================================
+// RENDER TABLE
+// ============================================================
+function isStale(dateStr) {
+  if (!dateStr) return false;
+  const d = new Date(dateStr);
+  const diff = (TODAY - d) / (1000 * 60 * 60 * 24);
+  return diff > 7;
+}
+
+function formatPrice(p) {
+  if (p == null) return '—';
+  return '$' + p.toLocaleString('en-AU');
+}
+
+function statusBadge(status) {
+  const map = {
+    'Available': 'available',
+    'Hold': 'hold',
+    'Deposit Taken': 'deposit',
+    'Sold': 'sold',
+    'Unavailable': 'unavailable'
+  };
+  const cls = map[status] || 'unavailable';
+  return `<span class="badge badge-${cls}"><span class="badge-dot"></span>${status}</span>`;
+}
+
+function sourceBadge(source) {
+  return `<span class="source-tag source-${source}">${source}</span>`;
+}
+
+function renderTable() {
+  const sorted = getSortedLots();
+  const total = sorted.length;
+  const totalPgs = Math.max(1, Math.ceil(total / perPage));
+  if (currentPage > totalPgs) currentPage = totalPgs;
+
+  document.getElementById('resultCount').textContent = total;
+  document.getElementById('totalCount').textContent = allLots.length;
+  document.getElementById('currentPage').textContent = currentPage;
+  document.getElementById('totalPages').textContent = totalPgs;
+
+  const start = (currentPage - 1) * perPage;
+  const pageData = sorted.slice(start, start + perPage);
+
+  const tbody = document.getElementById('tableBody');
+  const empty = document.getElementById('emptyState');
+
+  if (total === 0) {
+    tbody.innerHTML = '';
+    empty.style.display = 'flex';
+  } else {
+    empty.style.display = 'none';
+    tbody.innerHTML = pageData.map(lot => {
+      const stale = isStale(lot.lastConfirmed);
+      const staleFlag = stale ? `<span class="stale-flag" title="Data may be outdated — last confirmed over 7 days ago">⚠ Stale</span>` : '';
+      return `
+      <tr class="${stale ? 'stale' : ''}" onclick="showDetail(${lot.id})">
+        <td class="td-estate">${lot.estate}</td>
+        <td>${lot.stage}</td>
+        <td class="td-dim">${lot.lot}</td>
+        <td class="td-price">${formatPrice(lot.price)}</td>
+        <td class="td-dim">${lot.frontage}m</td>
+        <td class="td-dim">${lot.depth}m</td>
+        <td class="td-dim">${lot.size}</td>
+        <td class="td-date">${lot.titleDate || '—'}</td>
+        <td>${statusBadge(lot.status)}</td>
+        <td>${sourceBadge(lot.source)}</td>
+        <td class="td-date">${lot.lastConfirmed} ${staleFlag}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  renderPagination(totalPgs);
+}
+
+function renderPagination(totalPgs) {
+  const container = document.getElementById('pageControls');
+  let html = '';
+  html += `<button class="page-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>‹</button>`;
+  
+  const range = [];
+  for (let i = 1; i <= totalPgs; i++) {
+    if (i === 1 || i === totalPgs || (i >= currentPage-1 && i <= currentPage+1)) {
+      range.push(i);
+    } else if (range[range.length-1] !== '…') {
+      range.push('…');
+    }
+  }
+  range.forEach(p => {
+    if (p === '…') {
+      html += `<span style="padding:0 4px;color:var(--text-muted)">…</span>`;
+    } else {
+      html += `<button class="page-btn ${p===currentPage?'active':''}" onclick="goPage(${p})">${p}</button>`;
+    }
+  });
+  html += `<button class="page-btn" onclick="goPage(${currentPage+1})" ${currentPage===totalPgs?'disabled':''}>›</button>`;
+  container.innerHTML = html;
+}
+
+function goPage(p) {
+  const totalPgs = Math.ceil(filteredLots.length / perPage);
+  if (p < 1 || p > totalPgs) return;
+  currentPage = p;
+  renderTable();
+  document.getElementById('tableContainer').scrollTop = 0;
+}
+
+function changePerPage() {
+  perPage = parseInt(document.getElementById('perPageSelect').value);
+  currentPage = 1;
+  renderTable();
+}
+
+// ============================================================
+// DETAIL MODAL
+// ============================================================
+function showDetail(id) {
+  const lot = allLots.find(l => l.id === id);
+  if (!lot) return;
+
+  document.getElementById('modalTitle').textContent = `${lot.estate} — Lot ${lot.lot}`;
+  document.getElementById('modalSubtitle').textContent = `${lot.suburb} · Stage ${lot.stage} · ${lot.developer}`;
+
+  const stale = isStale(lot.lastConfirmed);
+  const staleNote = stale ? `<div style="margin-top:12px;padding:10px 12px;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;font-size:12px;color:#92400e;"><strong>⚠ Data may be stale</strong> — this lot was last confirmed over 7 days ago.</div>` : '';
+
+  document.getElementById('modalBody').innerHTML = `
+    <div class="detail-section">
+      <div class="detail-section-title">Pricing & Availability</div>
+      <div class="detail-grid">
+        <div class="detail-item" style="grid-column:span 2"><label>Price</label><div class="val lg mono">${formatPrice(lot.price)}</div></div>
+        <div class="detail-item"><label>Status</label><div class="val">${statusBadge(lot.status)}</div></div>
+        <div class="detail-item"><label>Title Date</label><div class="val mono">${lot.titleDate || '—'}</div></div>
+      </div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">Lot Dimensions</div>
+      <div class="detail-grid">
+        <div class="detail-item"><label>Frontage</label><div class="val mono">${lot.frontage}m</div></div>
+        <div class="detail-item"><label>Depth</label><div class="val mono">${lot.depth}m</div></div>
+        <div class="detail-item"><label>Size</label><div class="val mono">${lot.size} m²</div></div>
+        <div class="detail-item"><label>Lot Number</label><div class="val mono">${lot.lot}</div></div>
+      </div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">Estate & Developer</div>
+      <div class="detail-grid">
+        <div class="detail-item"><label>Estate</label><div class="val">${lot.estate}</div></div>
+        <div class="detail-item"><label>Stage</label><div class="val">${lot.stage}</div></div>
+        <div class="detail-item"><label>Developer</label><div class="val">${lot.developer}</div></div>
+        <div class="detail-item"><label>Suburb</label><div class="val">${lot.suburb}</div></div>
+      </div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">Data Source</div>
+      <div class="detail-grid">
+        <div class="detail-item"><label>Source Type</label><div class="val">${sourceBadge(lot.source)}</div></div>
+        <div class="detail-item"><label>Last Confirmed</label><div class="val mono">${lot.lastConfirmed}</div></div>
+        <div class="detail-item" style="grid-column:span 2"><label>Source Detail</label>
+          <div class="val" style="font-size:12px;word-break:break-all;">
+            ${lot.source === 'website' || lot.source === 'portal'
+              ? `<a href="${lot.sourceDetail}" target="_blank" style="color:var(--blue)">${lot.sourceDetail}</a>`
+              : lot.sourceDetail}
+          </div>
+        </div>
+      </div>
+      ${staleNote}
+    </div>
+  `;
+
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('modalOverlay')) closeModalDirect();
+}
+function closeModalDirect() {
+  document.getElementById('modalOverlay').classList.remove('open');
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModalDirect();
+});
+
+// ============================================================
+// EXPORT
+// ============================================================
+function exportCSV() {
+  const sorted = getSortedLots();
+  const headers = ['Estate','Developer','Suburb','Stage','Lot','Price','Frontage(m)','Depth(m)','Size(m2)','Title Date','Status','Source','Source Detail','Last Confirmed'];
+  const rows = sorted.map(l => [
+    l.estate, l.developer, l.suburb, l.stage, l.lot, l.price, l.frontage, l.depth, l.size,
+    l.titleDate, l.status, l.source, l.sourceDetail, l.lastConfirmed
+  ]);
+  const csv = [headers, ...rows].map(r => r.map(v => `"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const today = new Date().toISOString().split('T')[0];
+  a.download = `land_search_export_${today}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast(`✓ Exported ${sorted.length} lots to CSV`);
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ============================================================
+// SECTION COLLAPSE
+// ============================================================
+function toggleSection(id) {
+  document.getElementById(id).classList.toggle('collapsed');
+}
+
+// ============================================================
+// MOBILE FILTERS
+// ============================================================
+function toggleMobileFilters() {
+  document.getElementById('filterPanel').classList.toggle('open');
+}
+
+// ============================================================
+// INIT
+// ============================================================
+applyFilters();
+</script>
+</body>
+</html>
