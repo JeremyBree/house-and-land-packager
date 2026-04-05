@@ -15,7 +15,7 @@ COPY src/ ./src/
 COPY alembic.ini ./
 
 # Install Python dependencies
-RUN pip install --no-cache-dir -e "."
+RUN pip install --no-cache-dir .
 
 # Create storage directories
 RUN mkdir -p /data/storage
