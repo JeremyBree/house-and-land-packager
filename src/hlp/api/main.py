@@ -12,6 +12,8 @@ from sqlalchemy.orm import Session
 
 import hlp.models  # noqa: F401  # register all models on Base.metadata
 from hlp.api.routers import auth as auth_router
+from hlp.api.routers import clash_rules as clash_rules_router
+from hlp.api.routers import conflicts as conflicts_router
 from hlp.api.routers import developers as developers_router
 from hlp.api.routers import documents as documents_router
 from hlp.api.routers import estates as estates_router
@@ -19,6 +21,7 @@ from hlp.api.routers import files as files_router
 from hlp.api.routers import filter_presets as filter_presets_router
 from hlp.api.routers import lot_search as lot_search_router
 from hlp.api.routers import lots as lots_router
+from hlp.api.routers import packages as packages_router
 from hlp.api.routers import regions as regions_router
 from hlp.api.routers import stages as stages_router
 from hlp.api.routers import users as users_router
@@ -26,7 +29,9 @@ from hlp.config import get_settings
 from hlp.database import Base, get_db, get_engine
 from hlp.shared.exceptions import (
     AuthenticationError,
+    ClashRuleNotFoundError,
     DocumentNotFoundError,
+    DuplicateClashRuleError,
     DuplicateEmailError,
     DuplicatePresetNameError,
     ExportTooLargeError,
@@ -39,6 +44,7 @@ from hlp.shared.exceptions import (
     MinRolesRequiredError,
     NotAuthorizedError,
     NotFoundError,
+    PackageNotFoundError,
     StageNotFoundError,
     UnsupportedFileTypeError,
     UserNotFoundError,
@@ -143,6 +149,18 @@ def _register_exception_handlers(application: FastAPI) -> None:
     async def _export_too_large(_: Request, exc: ExportTooLargeError):
         return _error_response(413, str(exc), "export_too_large")
 
+    @application.exception_handler(ClashRuleNotFoundError)
+    async def _clash_nf(_: Request, exc: ClashRuleNotFoundError):
+        return _error_response(404, str(exc), "clash_rule_not_found")
+
+    @application.exception_handler(PackageNotFoundError)
+    async def _package_nf(_: Request, exc: PackageNotFoundError):
+        return _error_response(404, str(exc), "package_not_found")
+
+    @application.exception_handler(DuplicateClashRuleError)
+    async def _dup_clash(_: Request, exc: DuplicateClashRuleError):
+        return _error_response(409, str(exc), "duplicate_clash_rule")
+
     @application.exception_handler(NotFoundError)
     async def _nf(_: Request, exc: NotFoundError):
         return _error_response(404, str(exc), "not_found")
@@ -226,6 +244,12 @@ def create_app() -> FastAPI:
     application.include_router(files_router.router)
     application.include_router(lot_search_router.router)
     application.include_router(filter_presets_router.router)
+    application.include_router(clash_rules_router.estate_scoped_router)
+    application.include_router(clash_rules_router.stage_scoped_router)
+    application.include_router(clash_rules_router.estate_stage_router)
+    application.include_router(clash_rules_router.rules_router)
+    application.include_router(packages_router.router)
+    application.include_router(conflicts_router.router)
 
     return application
 

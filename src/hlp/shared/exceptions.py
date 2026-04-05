@@ -67,3 +67,15 @@ class FilterPresetNotFoundError(NotFoundError):
 
 class DuplicatePresetNameError(HLPError):
     """Raised when a user already has a filter preset with the same name."""
+
+
+class ClashRuleNotFoundError(NotFoundError):
+    """Raised when a clash rule lookup fails."""
+
+
+class PackageNotFoundError(NotFoundError):
+    """Raised when a house package lookup fails."""
+
+
+class DuplicateClashRuleError(HLPError):
+    """Raised when attempting to create a clash rule that already exists for the scope."""

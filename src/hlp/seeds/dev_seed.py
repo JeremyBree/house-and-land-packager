@@ -8,11 +8,13 @@ from decimal import Decimal
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from hlp.models.clash_rule import ClashRule
 from hlp.models.developer import Developer
 from hlp.models.enums import LotStatus, Source, StageStatus, UserRoleType
 from hlp.models.estate import Estate
 from hlp.models.estate_document import EstateDocument
 from hlp.models.estate_stage import EstateStage
+from hlp.models.house_package import HousePackage
 from hlp.models.region import Region
 from hlp.models.stage_lot import StageLot
 from hlp.repositories import profile_repository
@@ -160,6 +162,8 @@ def seed_dev(db: Session) -> None:
 
     _seed_stages_and_lots(db)
     _seed_sample_document(db)
+    _seed_clash_rules(db)
+    _seed_house_packages(db)
 
     for user_fields in USERS:
         existing = profile_repository.get_by_email(db, user_fields["email"])
@@ -296,3 +300,201 @@ def _seed_sample_document(db: Session) -> None:
     db.add(doc)
     db.flush()
     logger.info("Seeded sample estate document for estate %s", first_estate.estate_name)
+
+
+def _seed_clash_rules(db: Session) -> None:
+    """Seed 3-5 clash rules for Cloverton Stage 1 (idempotent)."""
+    cloverton = db.execute(
+        select(Estate).where(Estate.estate_name == "Cloverton")
+    ).scalar_one_or_none()
+    if cloverton is None:
+        return
+    stage1 = db.execute(
+        select(EstateStage).where(
+            EstateStage.estate_id == cloverton.estate_id,
+            EstateStage.name == "Stage 1",
+        )
+    ).scalar_one_or_none()
+    if stage1 is None:
+        return
+
+    # (lot_number, cannot_match)
+    rule_specs = [
+        ("1", ["2", "3"]),
+        ("2", ["1", "3"]),
+        ("3", ["1", "2"]),
+        ("5", ["6"]),
+        ("6", ["5"]),
+    ]
+    for lot_number, cannot_match in rule_specs:
+        existing = db.execute(
+            select(ClashRule).where(
+                ClashRule.estate_id == cloverton.estate_id,
+                ClashRule.stage_id == stage1.stage_id,
+                ClashRule.lot_number == lot_number,
+            )
+        ).scalar_one_or_none()
+        if existing is not None:
+            continue
+        db.add(
+            ClashRule(
+                estate_id=cloverton.estate_id,
+                stage_id=stage1.stage_id,
+                lot_number=lot_number,
+                cannot_match=cannot_match,
+            )
+        )
+        logger.info(
+            "Seeded clash rule: Cloverton Stage 1 lot %s cannot match %s",
+            lot_number,
+            cannot_match,
+        )
+    db.flush()
+
+
+def _seed_house_packages(db: Session) -> None:
+    """Seed 10-15 house packages with an intentional conflict (idempotent)."""
+    existing_count = db.execute(select(HousePackage)).first()
+    if existing_count is not None:
+        return
+
+    cloverton = db.execute(
+        select(Estate).where(Estate.estate_name == "Cloverton")
+    ).scalar_one_or_none()
+    if cloverton is None:
+        return
+    cloverton_stage1 = db.execute(
+        select(EstateStage).where(
+            EstateStage.estate_id == cloverton.estate_id,
+            EstateStage.name == "Stage 1",
+        )
+    ).scalar_one_or_none()
+    if cloverton_stage1 is None:
+        return
+
+    # Get second estate (any active one) to spread packages around
+    other_estates = db.execute(
+        select(Estate).where(Estate.estate_id != cloverton.estate_id).limit(2)
+    ).scalars().all()
+
+    specs: list[dict] = []
+
+    # Intentional conflict: Lots 1 and 2 on Cloverton Stage 1 same design+facade
+    # (clash rule says 1 cannot match 2)
+    specs.append(
+        {
+            "estate_id": cloverton.estate_id,
+            "stage_id": cloverton_stage1.stage_id,
+            "lot_number": "1",
+            "design": "Aspen 28",
+            "facade": "Hampton",
+            "colour_scheme": "Coastal",
+            "brand": "Hermitage Homes",
+            "status": "Assigned",
+        }
+    )
+    specs.append(
+        {
+            "estate_id": cloverton.estate_id,
+            "stage_id": cloverton_stage1.stage_id,
+            "lot_number": "2",
+            "design": "Aspen 28",
+            "facade": "Hampton",
+            "colour_scheme": "Coastal",
+            "brand": "Hermitage Homes",
+            "status": "Assigned",
+        }
+    )
+    # A non-conflicting package on Cloverton Stage 1
+    specs.append(
+        {
+            "estate_id": cloverton.estate_id,
+            "stage_id": cloverton_stage1.stage_id,
+            "lot_number": "4",
+            "design": "Ballarat 26",
+            "facade": "Modern",
+            "colour_scheme": "Stone",
+            "brand": "Kingsbridge Homes",
+            "status": "Assigned",
+        }
+    )
+    # Lot 5/6 clash — design matches, facade differs, so NOT a conflict
+    specs.append(
+        {
+            "estate_id": cloverton.estate_id,
+            "stage_id": cloverton_stage1.stage_id,
+            "lot_number": "5",
+            "design": "Carlton 30",
+            "facade": "Classic",
+            "colour_scheme": "Sand",
+            "brand": "Hermitage Homes",
+            "status": "Assigned",
+        }
+    )
+    specs.append(
+        {
+            "estate_id": cloverton.estate_id,
+            "stage_id": cloverton_stage1.stage_id,
+            "lot_number": "6",
+            "design": "Carlton 30",
+            "facade": "Contemporary",
+            "colour_scheme": "Sand",
+            "brand": "Hermitage Homes",
+            "status": "Assigned",
+        }
+    )
+
+    # Packages on other estates for variety
+    designs = [
+        ("Darwin 24", "Hampton", "Pearl", "Kingsbridge Homes"),
+        ("Eaton 32", "Modern", "Charcoal", "Hermitage Homes"),
+        ("Fairmont 26", "Heritage", "Cream", "Kingsbridge Homes"),
+        ("Grampian 29", "Contemporary", "Stone", "Hermitage Homes"),
+        ("Hawthorn 27", "Classic", "Coastal", "Kingsbridge Homes"),
+        ("Indigo 25", "Modern", "Sand", "Hermitage Homes"),
+        ("Jarrah 31", "Hampton", "Pearl", "Kingsbridge Homes"),
+    ]
+    lot_numbers = ["1", "2", "3", "4", "5", "6", "7"]
+    idx = 0
+    for estate in other_estates:
+        estate_stages = db.execute(
+            select(EstateStage)
+            .where(EstateStage.estate_id == estate.estate_id)
+            .limit(1)
+        ).scalars().all()
+        for stage in estate_stages:
+            for _ in range(3):
+                design, facade, colour, brand = designs[idx % len(designs)]
+                lot_num = lot_numbers[idx % len(lot_numbers)]
+                specs.append(
+                    {
+                        "estate_id": estate.estate_id,
+                        "stage_id": stage.stage_id,
+                        "lot_number": lot_num,
+                        "design": design,
+                        "facade": facade,
+                        "colour_scheme": colour,
+                        "brand": brand,
+                        "status": "Assigned",
+                    }
+                )
+                idx += 1
+
+    for spec in specs:
+        # Ensure the lot exists (otherwise skip)
+        lot = db.execute(
+            select(StageLot).where(
+                StageLot.stage_id == spec["stage_id"],
+                StageLot.lot_number == spec["lot_number"],
+            )
+        ).scalar_one_or_none()
+        if lot is None:
+            continue
+        pkg = HousePackage(**spec)
+        db.add(pkg)
+        # Sync lot fields
+        lot.design = spec["design"]
+        lot.facade = spec["facade"]
+        lot.brand = spec["brand"]
+    db.flush()
+    logger.info("Seeded %d house packages", len(specs))
