@@ -18,8 +18,10 @@ class Base(DeclarativeBase):
 @lru_cache
 def get_engine() -> Engine:
     url = get_settings().database_url
+    # Railway provides postgres:// but SQLAlchemy 2.x requires postgresql://
+    if url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql://", 1)
     connect_args: dict = {}
-    # psycopg2 supports connect_timeout; applies to Postgres only
     if url.startswith("postgresql"):
         connect_args["connect_timeout"] = 10
     return create_engine(url, echo=False, pool_pre_ping=True, connect_args=connect_args)
