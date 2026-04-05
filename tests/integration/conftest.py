@@ -1,0 +1,285 @@
+"""Integration test fixtures: FastAPI TestClient bound to SQLite.
+
+Sprint 1 ships 5 tables (profiles, user_roles, regions, developers, estates),
+none of which use PostgreSQL-only column types. We therefore drive the full
+FastAPI stack against an in-memory SQLite database for fast, Docker-free
+integration tests. If/when later sprints add JSONB/ARRAY columns, swap this
+fixture to testcontainers Postgres (see module docstring in parent conftest).
+"""
+from __future__ import annotations
+
+from collections.abc import Iterator
+
+import pytest
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+from sqlalchemy.engine import Engine
+from sqlalchemy.orm import Session, sessionmaker
+
+from hlp.api.deps import get_db as api_get_db
+from hlp.api.main import create_app
+from hlp.database import get_db as db_get_db
+from hlp.models.enums import UserRoleType
+from hlp.shared import user_service
+
+TEST_USERS = {
+    "admin": {
+        "email": "admin@it.example.com",
+        "password": "Admin1234!",
+        "first_name": "Admin",
+        "last_name": "User",
+        "job_title": "Admin",
+        "roles": [UserRoleType.ADMIN],
+    },
+    "pricing": {
+        "email": "pricing@it.example.com",
+        "password": "Pricing1234!",
+        "first_name": "Pricing",
+        "last_name": "User",
+        "job_title": "Pricing",
+        "roles": [UserRoleType.PRICING],
+    },
+    "sales": {
+        "email": "sales@it.example.com",
+        "password": "Sales1234!",
+        "first_name": "Sales",
+        "last_name": "User",
+        "job_title": "Sales",
+        "roles": [UserRoleType.SALES],
+    },
+    "requester": {
+        "email": "requester@it.example.com",
+        "password": "Request1234!",
+        "first_name": "Request",
+        "last_name": "User",
+        "job_title": "Requester",
+        "roles": [UserRoleType.REQUESTER],
+    },
+}
+
+
+@pytest.fixture(autouse=True)
+def _truncate_tables(engine: Engine):
+    """Wipe Sprint 1 tables before each integration test for isolation."""
+    with engine.begin() as conn:
+        for table in ("user_roles", "profiles", "estates", "developers", "regions"):
+            conn.exec_driver_sql(f"DELETE FROM {table}")
+    yield
+
+
+@pytest.fixture()
+def _session_factory(engine: Engine):
+    return sessionmaker(bind=engine, autoflush=False, autocommit=False)
+
+
+@pytest.fixture()
+def app(_session_factory) -> Iterator[FastAPI]:
+    """FastAPI app with get_db overridden to use the test SQLite session."""
+    # Create the app WITHOUT triggering lifespan (we skip the TestClient
+    # context manager so startup/shutdown hooks don't run).
+    application = create_app()
+
+    def _override_get_db():
+        session = _session_factory()
+        try:
+            yield session
+        finally:
+            session.close()
+
+    # Both of these are used in different modules; override both.
+    application.dependency_overrides[api_get_db] = _override_get_db
+    application.dependency_overrides[db_get_db] = _override_get_db
+
+    yield application
+    application.dependency_overrides.clear()
+
+
+@pytest.fixture()
+def client(app: FastAPI) -> Iterator[TestClient]:
+    # Do NOT use 'with TestClient(...)' — that runs the lifespan which tries
+    # to create_all on Postgres-only tables. The app is fully functional
+    # without lifespan because tables are already created by the engine fixture.
+    # raise_server_exceptions=False lets us observe 500s from uncaught
+    # SQLAlchemy IntegrityErrors (e.g. FK violations, unique violations) as
+    # HTTP responses rather than raised exceptions.
+    yield TestClient(app, raise_server_exceptions=False)
+
+
+@pytest.fixture()
+def seeded_users(_session_factory):
+    """Create the four standard role users. Returns a dict keyed by role name."""
+    session: Session = _session_factory()
+    try:
+        created = {}
+        for key, data in TEST_USERS.items():
+            profile = user_service.create_user_with_roles(
+                session,
+                email=data["email"],
+                password=data["password"],
+                first_name=data["first_name"],
+                last_name=data["last_name"],
+                job_title=data["job_title"],
+                roles=data["roles"],
+            )
+            created[key] = {
+                "profile_id": profile.profile_id,
+                "email": profile.email,
+                "password": data["password"],
+            }
+        session.commit()
+        return created
+    finally:
+        session.close()
+
+
+def _login(client: TestClient, email: str, password: str) -> str:
+    r = client.post(
+        "/api/auth/login",
+        data={"username": email, "password": password},
+    )
+    assert r.status_code == 200, r.text
+    return r.json()["access_token"]
+
+
+@pytest.fixture()
+def admin_token(client: TestClient, seeded_users) -> str:
+    u = seeded_users["admin"]
+    return _login(client, u["email"], u["password"])
+
+
+@pytest.fixture()
+def pricing_token(client: TestClient, seeded_users) -> str:
+    u = seeded_users["pricing"]
+    return _login(client, u["email"], u["password"])
+
+
+@pytest.fixture()
+def sales_token(client: TestClient, seeded_users) -> str:
+    u = seeded_users["sales"]
+    return _login(client, u["email"], u["password"])
+
+
+@pytest.fixture()
+def requester_token(client: TestClient, seeded_users) -> str:
+    u = seeded_users["requester"]
+    return _login(client, u["email"], u["password"])
+
+
+def auth_header(token: str) -> dict[str, str]:
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture()
+def admin_headers(admin_token: str) -> dict[str, str]:
+    return auth_header(admin_token)
+
+
+@pytest.fixture()
+def sales_headers(sales_token: str) -> dict[str, str]:
+    return auth_header(sales_token)
+
+
+@pytest.fixture()
+def pricing_headers(pricing_token: str) -> dict[str, str]:
+    return auth_header(pricing_token)
+
+
+@pytest.fixture()
+def requester_headers(requester_token: str) -> dict[str, str]:
+    return auth_header(requester_token)
+
+
+# -----------------------------------------------------------------------------
+# Sample data helpers (developers/regions/estates) for estate API tests.
+# -----------------------------------------------------------------------------
+
+
+@pytest.fixture()
+def sample_data(_session_factory):
+    """Seed a few regions, developers, and estates for list/filter tests."""
+    from hlp.models.developer import Developer
+    from hlp.models.estate import Estate
+    from hlp.models.region import Region
+
+    session: Session = _session_factory()
+    try:
+        regions = [Region(name=n) for n in ("North", "South", "East")]
+        for r in regions:
+            session.add(r)
+        session.flush()
+
+        devs = [
+            Developer(developer_name="Stockland"),
+            Developer(developer_name="Mirvac"),
+        ]
+        for d in devs:
+            session.add(d)
+        session.flush()
+
+        estates = [
+            Estate(
+                developer_id=devs[0].developer_id,
+                region_id=regions[0].region_id,
+                estate_name="Cloverton",
+                suburb="Kalkallo",
+                postcode="3064",
+                active=True,
+            ),
+            Estate(
+                developer_id=devs[0].developer_id,
+                region_id=regions[0].region_id,
+                estate_name="Highlands",
+                suburb="Craigieburn",
+                postcode="3064",
+                active=True,
+            ),
+            Estate(
+                developer_id=devs[1].developer_id,
+                region_id=regions[1].region_id,
+                estate_name="Smiths Lane",
+                suburb="Clyde North",
+                postcode="3978",
+                active=True,
+            ),
+            Estate(
+                developer_id=devs[1].developer_id,
+                region_id=regions[2].region_id,
+                estate_name="Olivine",
+                suburb="Donnybrook",
+                postcode="3064",
+                active=True,
+            ),
+            Estate(
+                developer_id=devs[0].developer_id,
+                region_id=regions[2].region_id,
+                estate_name="Retired Estate",
+                suburb="Gone",
+                postcode="3000",
+                active=False,
+            ),
+        ]
+        for e in estates:
+            session.add(e)
+        session.commit()
+
+        return {
+            "regions": [
+                {"region_id": r.region_id, "name": r.name} for r in regions
+            ],
+            "developers": [
+                {"developer_id": d.developer_id, "developer_name": d.developer_name}
+                for d in devs
+            ],
+            "estates": [
+                {
+                    "estate_id": e.estate_id,
+                    "estate_name": e.estate_name,
+                    "developer_id": e.developer_id,
+                    "region_id": e.region_id,
+                    "active": e.active,
+                }
+                for e in estates
+            ],
+        }
+    finally:
+        session.close()
