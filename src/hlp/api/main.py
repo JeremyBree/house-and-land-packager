@@ -57,22 +57,32 @@ async def lifespan(app: FastAPI):
         logger.info("Connecting to database and creating tables...")
         Base.metadata.create_all(engine)
         logger.info("Database tables created/verified successfully (19 tables)")
-        # Auto-seed if database is empty (idempotent for PoC)
+        # Auto-seed on startup (idempotent for PoC)
         from hlp.database import get_session_factory
+        from hlp.models.estate_stage import EstateStage
         from hlp.models.profile import Profile
 
         session = get_session_factory()()
         try:
             profile_count = session.query(Profile).count()
-            if profile_count == 0:
-                logger.info("Database is empty, running dev seed...")
+            stage_count = session.query(EstateStage).count()
+            if profile_count == 0 or stage_count == 0:
+                logger.info(
+                    "Running dev seed (profiles=%d, stages=%d)...",
+                    profile_count,
+                    stage_count,
+                )
                 from hlp.seeds.dev_seed import seed_dev
 
                 seed_dev(session)
                 session.commit()
                 logger.info("Dev seed complete")
             else:
-                logger.info("Database already has %d profiles, skipping seed", profile_count)
+                logger.info(
+                    "Database already seeded (%d profiles, %d stages), skipping",
+                    profile_count,
+                    stage_count,
+                )
         finally:
             session.close()
     except Exception as exc:
