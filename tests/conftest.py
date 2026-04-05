@@ -43,6 +43,9 @@ SPRINT1_TABLES = (
     "estate_documents",
     # Sprint 3 additions
     "filter_presets",
+    # Sprint 4 additions
+    "clash_rules",
+    "house_packages",
 )
 
 
@@ -88,6 +91,8 @@ def db_session(engine: Engine) -> Iterator[Session]:
         # Clean tables in FK-safe order.
         with engine.begin() as conn:
             for table in (
+                "house_packages",
+                "clash_rules",
                 "filter_presets",
                 "user_roles",
                 "profiles",

@@ -2,7 +2,7 @@
 
 from datetime import datetime, timezone
 
-from sqlalchemy import ARRAY, DateTime, ForeignKey, Index, String, UniqueConstraint, func
+from sqlalchemy import ARRAY, DateTime, ForeignKey, Index, JSON, String, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from hlp.database import Base
@@ -19,7 +19,9 @@ class ClashRule(Base):
     estate_id: Mapped[int] = mapped_column(ForeignKey("estates.estate_id"), nullable=False)
     stage_id: Mapped[int] = mapped_column(ForeignKey("estate_stages.stage_id"), nullable=False)
     lot_number: Mapped[str] = mapped_column(String(50), nullable=False)
-    cannot_match: Mapped[list[str]] = mapped_column(ARRAY(String(50)), nullable=False)
+    cannot_match: Mapped[list[str]] = mapped_column(
+        ARRAY(String(50)).with_variant(JSON(), "sqlite"), nullable=False
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),

@@ -74,8 +74,6 @@ async def lifespan(app: FastAPI):
         session = get_session_factory()()
         try:
             logger.info("Running idempotent dev seed...")
-                from hlp.seeds.dev_seed import seed_dev
-
             from hlp.seeds.dev_seed import seed_dev
 
             seed_dev(session)

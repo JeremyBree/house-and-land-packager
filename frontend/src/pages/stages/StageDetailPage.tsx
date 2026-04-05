@@ -30,6 +30,7 @@ import { LotFormDialog } from '@/components/lots/LotFormDialog'
 import { BulkUploadDialog } from '@/components/lots/BulkUploadDialog'
 import { StatusTransitionDialog } from '@/components/lots/StatusTransitionDialog'
 import { StatusHistoryDrawer } from '@/components/lots/StatusHistoryDrawer'
+import { ClashRuleEditor } from '@/components/clash-rules/ClashRuleEditor'
 import { deleteStage, getStage } from '@/api/stages'
 import { deleteLot, listLots } from '@/api/lots'
 import { getEstate } from '@/api/estates'
@@ -382,6 +383,10 @@ export default function StageDetailPage() {
           onPageChange: setPage,
         }}
       />
+
+      <div className="mt-6">
+        <ClashRuleEditor estateId={estateId} stageId={stageId} isAdmin={isAdmin} />
+      </div>
 
       <StageFormDialog
         open={showEditStage}

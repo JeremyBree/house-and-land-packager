@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import {
+  AlertTriangle,
   Building2,
   FileText,
   LayoutDashboard,
@@ -24,7 +25,8 @@ interface NavItem {
 const mainNav: NavItem[] = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/estates', label: 'Estates', icon: Building2 },
-  { to: '/packages', label: 'Packages', icon: Package, disabled: true, tooltip: 'Coming soon' },
+  { to: '/packages', label: 'Packages', icon: Package },
+  { to: '/conflicts', label: 'Conflicts', icon: AlertTriangle },
   { to: '/pricing-requests', label: 'Pricing Requests', icon: FileText, disabled: true, tooltip: 'Coming soon' },
   { to: '/lsi', label: 'Land Search', icon: Search },
 ]

@@ -305,3 +305,57 @@ export interface FilterPresetUpdate {
   name?: string
   filters?: LotSearchFilters
 }
+
+export interface ClashRuleRead {
+  rule_id: number
+  estate_id: number
+  stage_id: number
+  lot_number: string
+  cannot_match: string[]
+  created_at: string
+}
+
+export interface PackageRead {
+  package_id: number
+  estate_id: number
+  stage_id: number
+  lot_number: string
+  design: string
+  facade: string
+  colour_scheme: string | null
+  brand: string
+  source: string | null
+  status: string | null
+  flyer_path: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface PackageInput {
+  estate_id: number
+  stage_id: number
+  lot_number: string
+  design: string
+  facade: string
+  colour_scheme?: string | null
+  brand: string
+  source?: string | null
+  status?: string | null
+}
+
+export interface ConflictRead {
+  conflict_type: 'design-facade' | 'design-facade-colour'
+  severity: 'high' | 'critical'
+  package_a: PackageRead
+  package_b: PackageRead
+  rule_id: number
+  estate_id: number
+  stage_id: number
+  lot_numbers: string[]
+}
+
+export interface ConflictSummary {
+  total_conflicts: number
+  by_type: Record<string, number>
+  by_estate: Array<{ estate_id: number; estate_name: string; count: number }>
+}

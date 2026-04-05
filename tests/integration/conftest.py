@@ -63,6 +63,8 @@ def _truncate_tables(engine: Engine):
     """Wipe Sprint 1+2 tables before each integration test for isolation."""
     with engine.begin() as conn:
         for table in (
+            "house_packages",
+            "clash_rules",
             "filter_presets",
             "user_roles",
             "profiles",
@@ -594,3 +596,91 @@ def upload_file(
         files={"file": (filename, content, content_type)},
         headers=headers or {},
     )
+
+
+# -----------------------------------------------------------------------------
+# Sprint 4 fixtures: clash rules, packages.
+# -----------------------------------------------------------------------------
+
+
+@pytest.fixture()
+def sample_clash_rules(_session_factory, sample_stages_and_lots):
+    """Seed 3 clash rules under stage A of the first estate."""
+    from hlp.models.clash_rule import ClashRule
+
+    session: Session = _session_factory()
+    try:
+        eid = sample_stages_and_lots["estate_id"]
+        sid = sample_stages_and_lots["stage_a_id"]
+        rules = [
+            ClashRule(
+                estate_id=eid,
+                stage_id=sid,
+                lot_number="A1",
+                cannot_match=["A2", "A3"],
+            ),
+            ClashRule(
+                estate_id=eid,
+                stage_id=sid,
+                lot_number="A2",
+                cannot_match=["A1"],
+            ),
+            ClashRule(
+                estate_id=eid,
+                stage_id=sid,
+                lot_number="A3",
+                cannot_match=["A1"],
+            ),
+        ]
+        session.add_all(rules)
+        session.commit()
+        return {
+            "estate_id": eid,
+            "stage_id": sid,
+            "rule_ids": [r.rule_id for r in rules],
+        }
+    finally:
+        session.close()
+
+
+@pytest.fixture()
+def sample_packages(_session_factory, sample_stages_and_lots):
+    """Seed 5 packages under stage A of the first estate."""
+    from hlp.models.house_package import HousePackage
+
+    session: Session = _session_factory()
+    try:
+        eid = sample_stages_and_lots["estate_id"]
+        sid = sample_stages_and_lots["stage_a_id"]
+        packages = [
+            HousePackage(
+                estate_id=eid, stage_id=sid, lot_number="A1",
+                design="Alpine", facade="Traditional", brand="Hermitage",
+            ),
+            HousePackage(
+                estate_id=eid, stage_id=sid, lot_number="A2",
+                design="Baxter", facade="Modern", brand="Hermitage",
+            ),
+            HousePackage(
+                estate_id=eid, stage_id=sid, lot_number="A3",
+                design="Camden", facade="Classic", brand="Kingsbridge",
+            ),
+            HousePackage(
+                estate_id=eid, stage_id=sid, lot_number="A4",
+                design="Devon", facade="Contemporary", brand="Kingsbridge",
+            ),
+            HousePackage(
+                estate_id=eid, stage_id=sid, lot_number="A5",
+                design="Alpine", facade="Traditional", brand="Hermitage",
+                colour_scheme="Coastal",
+            ),
+        ]
+        session.add_all(packages)
+        session.commit()
+        return {
+            "estate_id": eid,
+            "stage_id": sid,
+            "package_ids": [p.package_id for p in packages],
+        }
+    finally:
+        session.close()

@@ -1,18 +1,26 @@
 import { Link } from 'react-router-dom'
-import { Building2, Users, MapPin, Briefcase } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { AlertTriangle, Building2, Users, MapPin, Briefcase, Package } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { PageHeader } from '@/components/common/PageHeader'
 import { useAuth } from '@/hooks/useAuth'
+import { getConflictSummary } from '@/api/conflicts'
 
 export default function DashboardPage() {
   const { user, hasRole } = useAuth()
   const isAdmin = hasRole('admin')
 
+  const { data: conflictSummary } = useQuery({
+    queryKey: ['conflicts-summary'],
+    queryFn: getConflictSummary,
+  })
+  const totalConflicts = conflictSummary?.total_conflicts ?? 0
+
   return (
     <div>
       <PageHeader
         title={`Welcome, ${user?.first_name ?? ''}`}
-        description="House & Land Packager — Sprint 1"
+        description="House & Land Packager"
       />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -40,6 +48,39 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">Browse estates and developers.</p>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link to="/packages" className="group">
+          <Card className="h-full transition-colors group-hover:border-primary">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-base">Packages</CardTitle>
+              <Package className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">House & land packages.</p>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link to="/conflicts" className="group">
+          <Card className="h-full transition-colors group-hover:border-primary">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-base">Conflicts</CardTitle>
+              <AlertTriangle
+                className={`h-4 w-4 ${totalConflicts > 0 ? 'text-red-500' : 'text-muted-foreground'}`}
+              />
+            </CardHeader>
+            <CardContent>
+              <div
+                className={`text-2xl font-bold ${totalConflicts > 0 ? 'text-red-600' : 'text-green-600'}`}
+              >
+                {totalConflicts}
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {totalConflicts > 0 ? 'Active clash violations' : 'No conflicts detected'}
+              </p>
             </CardContent>
           </Card>
         </Link>
