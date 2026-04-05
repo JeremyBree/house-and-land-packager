@@ -4,6 +4,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, joinedload
 
 from hlp.models.estate import Estate
+from hlp.models.estate_stage import EstateStage
 from hlp.shared.exceptions import NotFoundError
 
 
@@ -50,6 +51,13 @@ def get_with_relations(db: Session, estate_id: int) -> Estate | None:
         .options(joinedload(Estate.developer), joinedload(Estate.region))
     )
     return db.execute(stmt).scalar_one_or_none()
+
+
+def count_stages(db: Session, estate_id: int) -> int:
+    stmt = select(func.count()).select_from(EstateStage).where(
+        EstateStage.estate_id == estate_id
+    )
+    return int(db.execute(stmt).scalar_one())
 
 
 def get(db: Session, estate_id: int) -> Estate | None:

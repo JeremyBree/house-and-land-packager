@@ -65,7 +65,10 @@ def get_estate(
     estate = estate_repository.get_with_relations(db, estate_id)
     if estate is None:
         raise NotFoundError(f"Estate {estate_id} not found")
-    return EstateDetailRead.model_validate(estate)
+    stages_count = estate_repository.count_stages(db, estate_id)
+    return EstateDetailRead.model_validate(
+        {**estate.__dict__, "developer": estate.developer, "region": estate.region, "stages_count": stages_count}
+    )
 
 
 @router.post(

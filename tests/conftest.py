@@ -36,6 +36,7 @@ SPRINT1_TABLES = (
     "regions",
     "developers",
     "estates",
+    "estate_stages",
 )
 
 
@@ -83,6 +84,7 @@ def db_session(engine: Engine) -> Iterator[Session]:
             for table in (
                 "user_roles",
                 "profiles",
+                "estate_stages",
                 "estates",
                 "developers",
                 "regions",

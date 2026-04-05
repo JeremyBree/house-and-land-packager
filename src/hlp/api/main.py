@@ -13,18 +13,29 @@ from sqlalchemy.orm import Session
 import hlp.models  # noqa: F401  # register all models on Base.metadata
 from hlp.api.routers import auth as auth_router
 from hlp.api.routers import developers as developers_router
+from hlp.api.routers import documents as documents_router
 from hlp.api.routers import estates as estates_router
+from hlp.api.routers import files as files_router
+from hlp.api.routers import lots as lots_router
 from hlp.api.routers import regions as regions_router
+from hlp.api.routers import stages as stages_router
 from hlp.api.routers import users as users_router
 from hlp.config import get_settings
 from hlp.database import Base, get_db, get_engine
 from hlp.shared.exceptions import (
     AuthenticationError,
+    DocumentNotFoundError,
     DuplicateEmailError,
+    FileTooLargeError,
     HLPError,
+    InvalidCsvError,
+    InvalidStatusTransitionError,
+    LotNotFoundError,
     MinRolesRequiredError,
     NotAuthorizedError,
     NotFoundError,
+    StageNotFoundError,
+    UnsupportedFileTypeError,
     UserNotFoundError,
 )
 
@@ -93,9 +104,37 @@ def _register_exception_handlers(application: FastAPI) -> None:
     async def _user_nf(_: Request, exc: UserNotFoundError):
         return _error_response(404, str(exc), "user_not_found")
 
+    @application.exception_handler(StageNotFoundError)
+    async def _stage_nf(_: Request, exc: StageNotFoundError):
+        return _error_response(404, str(exc), "stage_not_found")
+
+    @application.exception_handler(LotNotFoundError)
+    async def _lot_nf(_: Request, exc: LotNotFoundError):
+        return _error_response(404, str(exc), "lot_not_found")
+
+    @application.exception_handler(DocumentNotFoundError)
+    async def _doc_nf(_: Request, exc: DocumentNotFoundError):
+        return _error_response(404, str(exc), "document_not_found")
+
     @application.exception_handler(NotFoundError)
     async def _nf(_: Request, exc: NotFoundError):
         return _error_response(404, str(exc), "not_found")
+
+    @application.exception_handler(InvalidStatusTransitionError)
+    async def _bad_transition(_: Request, exc: InvalidStatusTransitionError):
+        return _error_response(400, str(exc), "invalid_status_transition")
+
+    @application.exception_handler(InvalidCsvError)
+    async def _bad_csv(_: Request, exc: InvalidCsvError):
+        return _error_response(422, str(exc), "invalid_csv")
+
+    @application.exception_handler(UnsupportedFileTypeError)
+    async def _bad_file_type(_: Request, exc: UnsupportedFileTypeError):
+        return _error_response(415, str(exc), "unsupported_file_type")
+
+    @application.exception_handler(FileTooLargeError)
+    async def _file_too_large(_: Request, exc: FileTooLargeError):
+        return _error_response(413, str(exc), "file_too_large")
 
     @application.exception_handler(MinRolesRequiredError)
     async def _min_roles(_: Request, exc: MinRolesRequiredError):
@@ -151,6 +190,13 @@ def create_app() -> FastAPI:
     application.include_router(regions_router.router)
     application.include_router(developers_router.router)
     application.include_router(estates_router.router)
+    application.include_router(stages_router.estates_scoped_router)
+    application.include_router(stages_router.stages_router)
+    application.include_router(lots_router.stages_scoped_router)
+    application.include_router(lots_router.lots_router)
+    application.include_router(documents_router.estate_scoped_router)
+    application.include_router(documents_router.docs_router)
+    application.include_router(files_router.router)
 
     return application
 

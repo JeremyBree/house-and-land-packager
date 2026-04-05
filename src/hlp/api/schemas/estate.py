@@ -60,3 +60,4 @@ class EstateRead(BaseModel):
 class EstateDetailRead(EstateRead):
     developer: DeveloperRead
     region: RegionRead | None = None
+    stages_count: int = 0
