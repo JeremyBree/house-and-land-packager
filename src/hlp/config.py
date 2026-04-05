@@ -10,8 +10,11 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql://hlp:hlp_dev@localhost:5432/hlp_dev"
     secret_key: str = "change-me"
+    jwt_secret_key: str = "change-me-in-production"
     jwt_algorithm: str = "HS256"
-    jwt_expiry_minutes: int = 1440
+    jwt_expire_minutes: int = 480  # 8 hours
+    jwt_expiry_minutes: int = 1440  # legacy, retained for backwards-compat
+    bcrypt_rounds: int = 12
     anthropic_api_key: str = ""
     storage_base_path: str = "/data/storage"
     log_level: str = "INFO"

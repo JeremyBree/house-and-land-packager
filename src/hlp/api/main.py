@@ -4,14 +4,29 @@ import logging
 import sys
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 import hlp.models  # noqa: F401  # register all models on Base.metadata
+from hlp.api.routers import auth as auth_router
+from hlp.api.routers import developers as developers_router
+from hlp.api.routers import estates as estates_router
+from hlp.api.routers import regions as regions_router
+from hlp.api.routers import users as users_router
 from hlp.config import get_settings
 from hlp.database import Base, get_db, get_engine
+from hlp.shared.exceptions import (
+    AuthenticationError,
+    DuplicateEmailError,
+    HLPError,
+    MinRolesRequiredError,
+    NotAuthorizedError,
+    NotFoundError,
+    UserNotFoundError,
+)
 
 # Configure logging to stdout for Railway
 logging.basicConfig(
@@ -39,6 +54,40 @@ async def lifespan(app: FastAPI):
     logger.info("Application shutting down")
 
 
+def _error_response(status_code: int, detail: str, code: str) -> JSONResponse:
+    return JSONResponse(status_code=status_code, content={"detail": detail, "code": code})
+
+
+def _register_exception_handlers(application: FastAPI) -> None:
+    @application.exception_handler(AuthenticationError)
+    async def _auth_err(_: Request, exc: AuthenticationError):
+        return _error_response(401, str(exc) or "Authentication failed", "authentication_error")
+
+    @application.exception_handler(NotAuthorizedError)
+    async def _notauth_err(_: Request, exc: NotAuthorizedError):
+        return _error_response(403, str(exc) or "Not authorized", "not_authorized")
+
+    @application.exception_handler(DuplicateEmailError)
+    async def _dup_err(_: Request, exc: DuplicateEmailError):
+        return _error_response(409, str(exc), "duplicate_email")
+
+    @application.exception_handler(UserNotFoundError)
+    async def _user_nf(_: Request, exc: UserNotFoundError):
+        return _error_response(404, str(exc), "user_not_found")
+
+    @application.exception_handler(NotFoundError)
+    async def _nf(_: Request, exc: NotFoundError):
+        return _error_response(404, str(exc), "not_found")
+
+    @application.exception_handler(MinRolesRequiredError)
+    async def _min_roles(_: Request, exc: MinRolesRequiredError):
+        return _error_response(400, str(exc), "min_roles_required")
+
+    @application.exception_handler(HLPError)
+    async def _hlp_err(_: Request, exc: HLPError):
+        return _error_response(500, str(exc) or "Server error", "server_error")
+
+
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application."""
     settings = get_settings()
@@ -58,6 +107,8 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    _register_exception_handlers(application)
+
     @application.get("/api/health")
     async def health_check():
         return {"status": "healthy", "version": "0.1.0"}
@@ -76,6 +127,12 @@ def create_app() -> FastAPI:
             return {"status": "connected", "tables": result}
         except Exception as exc:
             return {"status": "error", "detail": str(exc)}
+
+    application.include_router(auth_router.router)
+    application.include_router(users_router.router)
+    application.include_router(regions_router.router)
+    application.include_router(developers_router.router)
+    application.include_router(estates_router.router)
 
     return application
 
