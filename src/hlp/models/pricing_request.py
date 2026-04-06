@@ -39,6 +39,11 @@ class PricingRequest(Base, TimestampMixin):
     )
     submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    estimator_id: Mapped[int | None] = mapped_column(ForeignKey("profiles.profile_id"))
+    site_cost_inputs: Mapped[dict[str, Any] | None] = mapped_column(
+        JSONB().with_variant(JSON(), "sqlite"), default=None
+    )
+    estimated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     price_breakdown: Mapped[dict[str, Any] | None] = mapped_column(
         JSONB().with_variant(JSON(), "sqlite"), default=None
     )

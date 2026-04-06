@@ -31,6 +31,7 @@ from hlp.api.routers import lot_search as lot_search_router
 from hlp.api.routers import lots as lots_router
 from hlp.api.routers import notifications as notifications_router
 from hlp.api.routers import packages as packages_router
+from hlp.api.routers import pricing_config as pricing_config_router
 from hlp.api.routers import pricing_engine as pricing_engine_router
 from hlp.api.routers import pricing_requests as pricing_requests_router
 from hlp.api.routers import pricing_rules as pricing_rules_router
@@ -301,6 +302,7 @@ def create_app() -> FastAPI:
     application.include_router(configurations_router.router)
     application.include_router(ingestion_logs_router.router)
     application.include_router(house_designs_router.router)
+    application.include_router(pricing_config_router.router)
     application.include_router(pricing_engine_router.router)
     application.include_router(wholesale_groups_router.router)
     application.include_router(import_data_router.router)

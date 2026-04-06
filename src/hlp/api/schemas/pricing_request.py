@@ -57,6 +57,10 @@ class PricingRequestRead(BaseModel):
     lot_numbers: list[str]
     submitted_at: datetime | None = None
     completed_at: datetime | None = None
+    estimator_id: int | None = None
+    estimated_at: datetime | None = None
+    site_cost_inputs: dict | None = None
+    price_breakdown: dict | list | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -65,6 +69,7 @@ class PricingRequestDetailRead(PricingRequestRead):
     requester_name: str | None = None
     estate_name: str | None = None
     stage_name: str | None = None
+    estimator_name: str | None = None
 
 
 class PricingRequestListQuery(BaseModel):

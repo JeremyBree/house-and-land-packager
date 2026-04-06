@@ -23,6 +23,7 @@ import PricingRulesPage from '@/pages/admin/PricingRulesPage'
 import StageRulesPage from '@/pages/admin/StageRulesPage'
 import ConfigurationsPage from '@/pages/admin/ConfigurationsPage'
 import IngestionLogsPage from '@/pages/admin/IngestionLogsPage'
+import PricingConfigPage from '@/pages/admin/PricingConfigPage'
 
 export function AppRoutes() {
   return (
@@ -66,6 +67,7 @@ export function AppRoutes() {
         <Route path="/admin/stage-rules" element={<StageRulesPage />} />
         <Route path="/admin/configurations" element={<ConfigurationsPage />} />
         <Route path="/admin/ingestion-logs" element={<IngestionLogsPage />} />
+        <Route path="/admin/pricing-config" element={<PricingConfigPage />} />
       </Route>
 
       <Route path="*" element={<NotFoundPage />} />

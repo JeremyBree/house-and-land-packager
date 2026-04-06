@@ -39,6 +39,8 @@ class Brand(str, enum.Enum):
 
 class PricingRequestStatus(str, enum.Enum):
     PENDING = "Pending"
+    ESTIMATING = "Estimating"
+    PRICED = "Priced"
     IN_PROGRESS = "In Progress"
     COMPLETED = "Completed"
 

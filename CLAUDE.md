@@ -28,9 +28,9 @@ The API service consolidates REST API, packaging engine, agent orchestrator, and
 ### Key Backend Modules
 
 - `src/hlp/api/` — FastAPI routers (112 routes), Pydantic schemas, middleware
-- `src/hlp/api/routers/` — auth, estates, stages, lots, lot_search, documents, files, filter_presets, clash_rules, packages, conflicts, pricing_templates, pricing_rules, pricing_requests, notifications, users, regions, developers, dashboard, configurations, ingestion_logs
-- `src/hlp/api/schemas/` — auth, estate, stage, lot, lot_search, document, filter_preset, clash_rule, house_package, conflict, pricing_template, pricing_rule, pricing_request, notification, user, region, developer, dashboard, configuration, ingestion_log, common
-- `src/hlp/models/` — SQLAlchemy ORM models (19 tables)
+- `src/hlp/api/routers/` — auth, estates, stages, lots, lot_search, documents, files, filter_presets, clash_rules, packages, conflicts, pricing_templates, pricing_rules, pricing_requests, pricing_config, notifications, users, regions, developers, dashboard, configurations, ingestion_logs
+- `src/hlp/api/schemas/` — auth, estate, stage, lot, lot_search, document, filter_preset, clash_rule, house_package, conflict, pricing_template, pricing_rule, pricing_request, pricing_config, estimator, notification, user, region, developer, dashboard, configuration, ingestion_log, common
+- `src/hlp/models/` — SQLAlchemy ORM models (20 tables)
 - `src/hlp/repositories/` — Data access layer: estate, stage, lot, lot_search, status_history, document, filter_preset, clash_rule, house_package, pricing_template, pricing_rule, pricing_request, notification, profile, region, developer, configuration, ingestion_log
 - `src/hlp/agents/` — Ingestion agents (email, scraper, portal, PDF) + AI extraction pipeline
 - `src/hlp/orchestrator/` — Scheduler, dispatcher, lot lifecycle engine, conflict resolution
@@ -51,9 +51,9 @@ The API service consolidates REST API, packaging engine, agent orchestrator, and
 
 ### Data Model
 
-19 tables: `regions`, `developers`, `estates`, `estate_stages`, `stage_lots`, `status_history`, `house_packages`, `clash_rules`, `pricing_requests`, `pricing_templates`, `global_pricing_rules`, `stage_pricing_rules`, `pricing_rule_categories`, `profiles`, `user_roles`, `notifications`, `estate_documents`, `ingestion_logs`, `configurations`, `filter_presets`.
+20 tables: `regions`, `developers`, `estates`, `estate_stages`, `stage_lots`, `status_history`, `house_packages`, `clash_rules`, `pricing_requests`, `pricing_templates`, `global_pricing_rules`, `stage_pricing_rules`, `pricing_rule_categories`, `profiles`, `user_roles`, `notifications`, `estate_documents`, `ingestion_logs`, `configurations`, `filter_presets`.
 
-### API Endpoint Groups (112 routes)
+### API Endpoint Groups (120 routes)
 
 - `/api/auth` — login, register, me
 - `/api/users` — user CRUD, role management
@@ -73,7 +73,8 @@ The API service consolidates REST API, packaging engine, agent orchestrator, and
 - `/api/pricing-templates` — pricing template management
 - `/api/pricing-rule-categories` — rule category management
 - `/api/pricing-rules` — global and stage pricing rules
-- `/api/pricing-requests` — pricing request workflow (submit, fulfil, download)
+- `/api/pricing-config` — configurable pricing engine constants per brand (GET, PATCH)
+- `/api/pricing-requests` — pricing request workflow (submit, assign-estimator, submit-estimate, price-breakdown, fulfil, download)
 - `/api/notifications` — notification management
 - `/api/dashboard` — aggregated dashboard metrics
 - `/api/configurations` — ingestion source configuration CRUD
@@ -137,7 +138,8 @@ alembic downgrade -1                              # Rollback one
 - A clash is triggered when two restricted lots share the same design AND facade (case-insensitive)
 
 ### Pricing Request Flow
-- Sales submits → spreadsheet auto-generated from brand template (openpyxl) → pricing team uploads completed sheet → packages extracted and imported into DB
+- Sales submits (Pending) → admin assigns estimator (Estimating) → estimator submits site costs → pricing engine calculates → spreadsheet generated (Priced) → pricing team uploads completed sheet (Completed) → packages extracted and imported into DB
+- PricingConfig model stores configurable constants per brand (landscaping rate, commission, KDRB, discounts, rounding)
 - Conditional pricing rules evaluated against a `RequestContext` built from form toggles (corner_block, is_kdrb, building_crossover, etc.)
 
 ### Lot Status Lifecycle

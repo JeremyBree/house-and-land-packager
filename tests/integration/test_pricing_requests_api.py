@@ -89,7 +89,9 @@ def test_submit_creates_request_with_pending_status(
     assert body["status"] == "Pending"
     assert body["brand"] == "Hermitage Homes"
     assert body["lot_numbers"] == ["A1"]
-    assert body["generated_file_path"] is not None
+    # Spreadsheet generation now happens after estimator submits site costs,
+    # so generated_file_path is None at submission time.
+    assert body["generated_file_path"] is None
     assert "request_id" in body
 
 
@@ -230,17 +232,12 @@ def test_download_generated_sheet(
         assert r.status_code == 201
         request_id = r.json()["request_id"]
 
-    # Download should work when storage has the file
-    with patch("hlp.api.routers.pricing_requests.get_storage_service") as mock_dl_storage:
-        dl_instance = MagicMock()
-        dl_instance.read_file.return_value = template_bytes
-        mock_dl_storage.return_value = dl_instance
-
-        r = client.get(
-            f"/api/pricing-requests/{request_id}/download",
-            headers=admin_headers,
-        )
-        assert r.status_code == 200
+    # Download should return 404 when generated_file_path is None (before estimation)
+    r = client.get(
+        f"/api/pricing-requests/{request_id}/download",
+        headers=admin_headers,
+    )
+    assert r.status_code == 404
 
 
 # ---- fulfil ------------------------------------------------------------------

@@ -4,6 +4,7 @@ import {
   Building2,
   Calculator,
   ClipboardList,
+  DollarSign,
   FileText,
   Globe,
   LayoutDashboard,
@@ -41,6 +42,7 @@ const adminNav: NavItem[] = [
   { to: '/admin/developers', label: 'Developers', icon: Briefcase },
   { to: '/admin/pricing-templates', label: 'Pricing Templates', icon: SlidersHorizontal },
   { to: '/admin/pricing-rules', label: 'Pricing Rules', icon: Calculator },
+  { to: '/admin/pricing-config', label: 'Pricing Config', icon: DollarSign },
   { to: '/admin/configurations', label: 'Configurations', icon: Globe },
   { to: '/admin/ingestion-logs', label: 'Ingestion Logs', icon: ClipboardList },
 ]

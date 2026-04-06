@@ -72,6 +72,7 @@ SPRINT1_TABLES = (
     "fbc_escalation_bands",
     "site_cost_tiers",
     "site_cost_items",
+    "pricing_configs",
 )
 
 
@@ -117,6 +118,7 @@ def db_session(engine: Engine) -> Iterator[Session]:
         # Clean tables in FK-safe order.
         with engine.begin() as conn:
             for table in (
+                "pricing_configs",
                 "site_cost_items",
                 "site_cost_tiers",
                 "fbc_escalation_bands",

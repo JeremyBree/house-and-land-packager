@@ -18,14 +18,15 @@ from hlp.models.commission_rate import CommissionRate
 from hlp.models.energy_rating import EnergyRating
 from hlp.models.fbc_escalation import FbcEscalationBand
 from hlp.models.house_design import HouseDesign, HouseFacade
-from hlp.models.postcode_site_cost import PostcodeSiteCost
-from hlp.models.site_cost import SiteCostItem, SiteCostTier
 from hlp.models.guideline import EstateDesignGuideline
+from hlp.models.postcode_site_cost import PostcodeSiteCost
+from hlp.models.pricing_config import PricingConfig
+from hlp.models.site_cost import SiteCostItem, SiteCostTier
 from hlp.models.upgrade import UpgradeItem
 from hlp.models.wholesale_group import WholesaleGroup
 
 # ---------------------------------------------------------------------------
-# Constants
+# Default Constants (used when no PricingConfig exists for the brand)
 # ---------------------------------------------------------------------------
 LANDSCAPING_RATE_PER_SQM = Decimal("39")
 BASE_COMMISSION = Decimal("33000")
@@ -36,6 +37,45 @@ SMALL_LOT_THRESHOLD = Decimal("300")
 SMALL_LOT_DISCOUNT = Decimal("5000")
 DWELLINGS_DISCOUNT = Decimal("3000")
 CORNER_BLOCK_SAVINGS = Decimal("4620")  # Saved when no corner blocks in batch
+
+@dataclass
+class BrandPricingConfig:
+    """Resolved pricing config for a brand — from DB or defaults."""
+
+    landscaping_rate_per_sqm: Decimal = LANDSCAPING_RATE_PER_SQM
+    base_commission: Decimal = BASE_COMMISSION
+    pct_commission_divisor: Decimal = PCT_COMMISSION_DIVISOR
+    kdrb_surcharge: Decimal = KDRB_SURCHARGE
+    holding_cost_rate: Decimal = HOLDING_COST_RATE
+    small_lot_threshold: Decimal = SMALL_LOT_THRESHOLD
+    small_lot_discount: Decimal = SMALL_LOT_DISCOUNT
+    dwellings_discount: Decimal = DWELLINGS_DISCOUNT
+    corner_block_savings: Decimal = CORNER_BLOCK_SAVINGS
+    build_price_rounding: int = 100
+    package_price_rounding: int = 100
+
+
+def _load_config(db: Session, brand: str) -> BrandPricingConfig:
+    """Load PricingConfig from DB for brand, or return defaults."""
+    config = db.execute(
+        select(PricingConfig).where(PricingConfig.brand == brand)
+    ).scalars().first()
+    if config is None:
+        return BrandPricingConfig()
+    return BrandPricingConfig(
+        landscaping_rate_per_sqm=_dec(config.landscaping_rate_per_sqm),
+        base_commission=_dec(config.base_commission),
+        pct_commission_divisor=_dec(config.pct_commission_divisor),
+        kdrb_surcharge=_dec(config.kdrb_surcharge),
+        holding_cost_rate=_dec(config.holding_cost_rate),
+        small_lot_threshold=_dec(config.small_lot_threshold_sqm),
+        small_lot_discount=_dec(config.small_lot_discount),
+        dwellings_discount=_dec(config.dwellings_discount),
+        corner_block_savings=_dec(config.corner_block_savings),
+        build_price_rounding=config.build_price_rounding,
+        package_price_rounding=config.package_price_rounding,
+    )
+
 
 NEUTRALIZING_FACADES = frozenset({
     "Holt", "Traditional", "Prominent", "Elite", "Sorrento",
@@ -188,9 +228,10 @@ def _dec(value: float | int | None) -> Decimal:
     return Decimal(str(value))
 
 
-def _round_up_100(value: Decimal) -> Decimal:
-    """Round up to the nearest $100."""
-    return (value / Decimal("100")).quantize(Decimal("1"), rounding=ROUND_UP) * Decimal("100")
+def _round_up_100(value: Decimal, rounding_unit: int = 100) -> Decimal:
+    """Round up to the nearest rounding_unit (default $100)."""
+    unit = Decimal(str(rounding_unit))
+    return (value / unit).quantize(Decimal("1"), rounding=ROUND_UP) * unit
 
 
 # ---------------------------------------------------------------------------
@@ -348,9 +389,12 @@ def _calculate_design_guidelines(
     estate_id: int,
     stage_id: int,
     has_corner: bool,
+    cfg: BrandPricingConfig | None = None,
 ) -> tuple[Decimal, list[dict]]:
     """Step 5: Sum estate design guideline costs."""
     from sqlalchemy import or_
+
+    corner_block_savings = cfg.corner_block_savings if cfg else CORNER_BLOCK_SAVINGS
 
     stmt = (
         select(EstateDesignGuideline)
@@ -375,7 +419,7 @@ def _calculate_design_guidelines(
             items.append({"name": name, "cost": cost})
 
     if not has_corner and total > 0:
-        savings = min(CORNER_BLOCK_SAVINGS, total)
+        savings = min(corner_block_savings, total)
         total -= savings
         items.append({"name": "No corner block savings", "cost": -savings})
 
@@ -425,6 +469,7 @@ def _calculate_discount(
     suburb: str,
     postcode: str,
     wholesale_group: str | None,
+    cfg: BrandPricingConfig | None = None,
 ) -> tuple[Decimal, str | None]:
     """Step 8: Location and size-based discounts.
 
@@ -432,18 +477,22 @@ def _calculate_discount(
     - $5,000 if lot_size < 300 sqm OR postcode in Latrobe Valley
     - $3,000 if wholesale_group == 'Dwellings Property Group'
     """
+    small_lot_threshold = cfg.small_lot_threshold if cfg else SMALL_LOT_THRESHOLD
+    small_lot_discount = cfg.small_lot_discount if cfg else SMALL_LOT_DISCOUNT
+    dwellings_discount = cfg.dwellings_discount if cfg else DWELLINGS_DISCOUNT
+
     total = Decimal("0")
     reasons: list[str] = []
 
-    if lot_size < SMALL_LOT_THRESHOLD or postcode in LATROBE_VALLEY_POSTCODES:
-        total += SMALL_LOT_DISCOUNT
-        if lot_size < SMALL_LOT_THRESHOLD:
-            reasons.append(f"Small lot (<{SMALL_LOT_THRESHOLD}m\u00b2)")
+    if lot_size < small_lot_threshold or postcode in LATROBE_VALLEY_POSTCODES:
+        total += small_lot_discount
+        if lot_size < small_lot_threshold:
+            reasons.append(f"Small lot (<{small_lot_threshold}m\u00b2)")
         if postcode in LATROBE_VALLEY_POSTCODES:
             reasons.append("Latrobe Valley postcode")
 
     if wholesale_group and wholesale_group.strip().lower() == "dwellings property group":
-        total += DWELLINGS_DISCOUNT
+        total += dwellings_discount
         reasons.append("Dwellings Property Group")
 
     reason = "; ".join(reasons) if reasons else None
@@ -455,21 +504,24 @@ def _lookup_commission(
     bdm_profile_id: int | None,
     wholesale_group_name: str | None,
     brand: str,
+    cfg: BrandPricingConfig | None = None,
 ) -> tuple[Decimal | None, Decimal | None]:
     """Step 9: Commission lookup.
 
     Returns (fixed_amount, pct_rate) -- one will be None.
     If no BDM or wholesale group, return (BASE_COMMISSION, None).
     """
+    base_commission = cfg.base_commission if cfg else BASE_COMMISSION
+
     if bdm_profile_id is None or wholesale_group_name is None:
-        return BASE_COMMISSION, None
+        return base_commission, None
 
     # Resolve wholesale group
     group = db.execute(
         select(WholesaleGroup).where(WholesaleGroup.group_name == wholesale_group_name)
     ).scalars().first()
     if group is None:
-        return BASE_COMMISSION, None
+        return base_commission, None
 
     stmt = select(CommissionRate).where(
         CommissionRate.bdm_profile_id == bdm_profile_id,
@@ -477,14 +529,14 @@ def _lookup_commission(
     )
     rate = db.execute(stmt).scalars().first()
     if rate is None:
-        return BASE_COMMISSION, None
+        return base_commission, None
 
     if rate.commission_fixed is not None:
         return _dec(rate.commission_fixed), None
     if rate.commission_pct is not None:
         return None, _dec(rate.commission_pct)
 
-    return BASE_COMMISSION, None
+    return base_commission, None
 
 
 def _calculate_fbc_escalation(
@@ -529,7 +581,10 @@ def _calculate_fbc_escalation(
     return pct * Decimal("100"), amount  # Return pct as percentage (e.g., 0.3)
 
 
-def _assemble_build_price(breakdown: PriceBreakdown) -> Decimal:
+def _assemble_build_price(
+    breakdown: PriceBreakdown,
+    cfg: BrandPricingConfig | None = None,
+) -> Decimal:
     """Step 11: Total Build Price with commission netting and rounding.
 
     Components = house + facade + energy + site_costs + guidelines + landscaping
@@ -542,6 +597,9 @@ def _assemble_build_price(breakdown: PriceBreakdown) -> Decimal:
         build = ROUNDUP(components - guidelines - BASE_COMMISSION + comms_adj, -2)
                 + guidelines
     """
+    base_commission = cfg.base_commission if cfg else BASE_COMMISSION
+    rounding_unit = cfg.build_price_rounding if cfg else 100
+
     components = (
         breakdown.house_price
         + breakdown.facade_price
@@ -561,26 +619,29 @@ def _assemble_build_price(breakdown: PriceBreakdown) -> Decimal:
         net = (
             components
             - guidelines
-            - (BASE_COMMISSION - breakdown.commission_fixed + breakdown.comms_adjustment)
+            - (base_commission - breakdown.commission_fixed + breakdown.comms_adjustment)
         )
-        build = _round_up_100(net) + guidelines
+        build = _round_up_100(net, rounding_unit) + guidelines
     elif breakdown.commission_pct is not None:
         net = (
             components
             - guidelines
-            - BASE_COMMISSION
+            - base_commission
             + breakdown.comms_adjustment
         )
-        build = _round_up_100(net) + guidelines
+        build = _round_up_100(net, rounding_unit) + guidelines
     else:
         # No commission info -- use fixed with base
         net = components - guidelines
-        build = _round_up_100(net) + guidelines
+        build = _round_up_100(net, rounding_unit) + guidelines
 
     return build
 
 
-def _assemble_package_price(breakdown: PriceBreakdown) -> Decimal:
+def _assemble_package_price(
+    breakdown: PriceBreakdown,
+    cfg: BrandPricingConfig | None = None,
+) -> Decimal:
     """Step 12: Total Package Price.
 
     If fixed commission:
@@ -588,9 +649,12 @@ def _assemble_package_price(breakdown: PriceBreakdown) -> Decimal:
     If percentage commission:
         package = ROUNDUP((land + build) / PCT_COMMISSION_DIVISOR, -2)
     """
+    pct_commission_divisor = cfg.pct_commission_divisor if cfg else PCT_COMMISSION_DIVISOR
+    rounding_unit = cfg.package_price_rounding if cfg else 100
+
     if breakdown.commission_pct is not None:
-        raw = (breakdown.land_price + breakdown.total_build_price) / PCT_COMMISSION_DIVISOR
-        return _round_up_100(raw)
+        raw = (breakdown.land_price + breakdown.total_build_price) / pct_commission_divisor
+        return _round_up_100(raw, rounding_unit)
     return breakdown.land_price + breakdown.total_build_price
 
 
@@ -624,25 +688,31 @@ def calculate_lot_price(
     context: PricingContext,
     lot_input: LotPricingInput,
     has_corner_in_batch: bool = False,
+    cfg: BrandPricingConfig | None = None,
 ) -> PriceBreakdown:
     """Complete pricing calculation for a single lot.
 
     Steps (matching Excel Pricing Sheet formulas):
-    1. House Price -- lookup from house_designs
-    2. Facade Price -- lookup from house_facades
-    3. Energy Compliance -- lookup from energy_ratings
-    4. Site Costs -- calculate from site_cost_matrix + postcode_site_costs
-    5. Design Guidelines -- sum estate_design_guidelines for the estate
-    6. Extra Landscaping -- max(0, lot_size - house_lot_total) * $39/sqm
-    7. Upgrades -- sum applicable upgrade_items
-    8. Discounts -- location/size/wholesale group based
-    9. Commission -- lookup from commission_rates
-    10. FBC Escalation -- 0.3% per 30-day period
-    11. Total Build Price -- assemble with rounding to nearest $100
-    12. Total Package Price -- land + build (adjusted for commission type)
-    13. Holding Costs -- 10% of build (if applicable)
+    1. Load config -- from pricing_configs table or defaults
+    2. House Price -- lookup from house_designs
+    3. Facade Price -- lookup from house_facades
+    4. Energy Compliance -- lookup from energy_ratings
+    5. Site Costs -- calculate from site_cost_matrix + postcode_site_costs
+    6. Design Guidelines -- sum estate_design_guidelines for the estate
+    7. Extra Landscaping -- max(0, lot_size - house_lot_total) * rate/sqm
+    8. Upgrades -- sum applicable upgrade_items
+    9. Discounts -- location/size/wholesale group based
+    10. Commission -- lookup from commission_rates
+    11. FBC Escalation -- 0.3% per 30-day period
+    12. Total Build Price -- assemble with rounding
+    13. Total Package Price -- land + build (adjusted for commission type)
+    14. Holding Costs -- rate of build (if applicable)
     Also: House Fits check, Extra Fence Meterage calculation
     """
+    # Step 0: Load config
+    if cfg is None:
+        cfg = _load_config(db, context.brand)
+
     breakdown = PriceBreakdown(
         lot_number=lot_input.lot_number,
         house_name=lot_input.house_name,
@@ -692,7 +762,7 @@ def calculate_lot_price(
 
     # Step 5: Design Guidelines
     breakdown.design_guidelines_total, guideline_items = _calculate_design_guidelines(
-        db, context.estate_id, context.stage_id, has_corner_in_batch
+        db, context.estate_id, context.stage_id, has_corner_in_batch, cfg
     )
     for item in guideline_items:
         breakdown.line_items.append(
@@ -700,16 +770,17 @@ def calculate_lot_price(
         )
 
     # Step 6: Extra Landscaping
+    landscaping_rate = cfg.landscaping_rate_per_sqm
     house_lot_total = _dec(house.lot_total_sqm)
     breakdown.extra_landscaping_sqm = max(Decimal("0"), lot_input.lot_size_sqm - house_lot_total)
-    breakdown.extra_landscaping = breakdown.extra_landscaping_sqm * LANDSCAPING_RATE_PER_SQM
+    breakdown.extra_landscaping = breakdown.extra_landscaping_sqm * landscaping_rate
     if breakdown.extra_landscaping > 0:
         breakdown.line_items.append(
             PriceLineItem(
                 "Extra Landscaping",
                 breakdown.extra_landscaping,
                 "landscaping",
-                f"{breakdown.extra_landscaping_sqm}m\u00b2 \u00d7 ${LANDSCAPING_RATE_PER_SQM}/m\u00b2",
+                f"{breakdown.extra_landscaping_sqm}m\u00b2 \u00d7 ${landscaping_rate}/m\u00b2",
             )
         )
 
@@ -722,7 +793,8 @@ def calculate_lot_price(
 
     # Step 8: Discounts
     breakdown.discount, breakdown.discount_reason = _calculate_discount(
-        lot_input.lot_size_sqm, context.suburb, context.postcode, context.wholesale_group_name
+        lot_input.lot_size_sqm, context.suburb, context.postcode,
+        context.wholesale_group_name, cfg,
     )
     if breakdown.discount > 0:
         breakdown.line_items.append(
@@ -731,14 +803,15 @@ def calculate_lot_price(
 
     # Step 9: KDRB Surcharge
     if context.is_kdrb:
-        breakdown.kdrb_surcharge = KDRB_SURCHARGE
+        kdrb = cfg.kdrb_surcharge
+        breakdown.kdrb_surcharge = kdrb
         breakdown.line_items.append(
-            PriceLineItem("KDRB Surcharge", KDRB_SURCHARGE, "kdrb")
+            PriceLineItem("KDRB Surcharge", kdrb, "kdrb")
         )
 
     # Step 10: Commission
     breakdown.commission_fixed, breakdown.commission_pct = _lookup_commission(
-        db, context.bdm_profile_id, context.wholesale_group_name, context.brand
+        db, context.bdm_profile_id, context.wholesale_group_name, context.brand, cfg
     )
 
     # Step 11: FBC Escalation
@@ -761,18 +834,19 @@ def calculate_lot_price(
             )
 
     # Step 12: Total Build Price
-    breakdown.total_build_price = _assemble_build_price(breakdown)
+    breakdown.total_build_price = _assemble_build_price(breakdown, cfg)
 
     # Step 13: Total Package Price
-    breakdown.total_package_price = _assemble_package_price(breakdown)
+    breakdown.total_package_price = _assemble_package_price(breakdown, cfg)
 
     # Step 14: Holding Costs
     if context.is_10_90_deal and context.holding_costs_apply:
-        breakdown.holding_costs = (breakdown.total_build_price * HOLDING_COST_RATE).quantize(
+        holding_rate = cfg.holding_cost_rate
+        breakdown.holding_costs = (breakdown.total_build_price * holding_rate).quantize(
             Decimal("1"), ROUND_UP
         )
         breakdown.line_items.append(
-            PriceLineItem("10% Holding Costs", breakdown.holding_costs, "holding")
+            PriceLineItem(f"{holding_rate * 100}% Holding Costs", breakdown.holding_costs, "holding")
         )
 
     # Validation: House Fits?
@@ -792,7 +866,9 @@ def calculate_batch(
     """Calculate prices for a batch of lots (one pricing request).
 
     Corner block logic: if ANY lot in batch is corner, all get full guidelines.
-    If NO lots are corner, guidelines total gets reduced by CORNER_BLOCK_SAVINGS.
+    If NO lots are corner, guidelines total gets reduced by corner_block_savings.
     """
+    # Load config once for the whole batch
+    cfg = _load_config(db, context.brand)
     has_corner = any(lot.corner_block for lot in lots)
-    return [calculate_lot_price(db, context, lot, has_corner) for lot in lots]
+    return [calculate_lot_price(db, context, lot, has_corner, cfg) for lot in lots]

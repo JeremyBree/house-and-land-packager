@@ -16,6 +16,7 @@ from hlp.models.house_package import HousePackage
 from hlp.models.ingestion_log import IngestionLog
 from hlp.models.notification import Notification
 from hlp.models.postcode_site_cost import PostcodeSiteCost
+from hlp.models.pricing_config import PricingConfig
 from hlp.models.pricing_request import PricingRequest
 from hlp.models.pricing_rule import GlobalPricingRule, StagePricingRule
 from hlp.models.pricing_rule_category import PricingRuleCategory
@@ -50,6 +51,7 @@ __all__ = [
     "IngestionLog",
     "Notification",
     "PostcodeSiteCost",
+    "PricingConfig",
     "PricingRequest",
     "PricingRuleCategory",
     "PricingTemplate",

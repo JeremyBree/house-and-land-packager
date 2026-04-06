@@ -24,13 +24,15 @@ import { extractErrorMessage } from '@/api/client'
 import { Badge } from '@/components/ui/badge'
 
 const PAGE_SIZE = 25
-const STATUSES = ['All', 'Pending', 'In Progress', 'Completed'] as const
+const STATUSES = ['All', 'Pending', 'Estimating', 'Priced', 'In Progress', 'Completed'] as const
 const BRANDS = ['All', 'Hermitage Homes', 'Kingsbridge Homes'] as const
 
 function statusVariant(status: string): 'default' | 'secondary' | 'destructive' | 'outline' {
   switch (status) {
     case 'Completed': return 'default'
     case 'In Progress': return 'secondary'
+    case 'Estimating': return 'secondary'
+    case 'Priced': return 'default'
     case 'Pending': return 'outline'
     default: return 'default'
   }

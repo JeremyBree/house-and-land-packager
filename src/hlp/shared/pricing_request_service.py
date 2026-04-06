@@ -1,4 +1,4 @@
-"""Pricing request service: submit, fulfil, list, resubmit, delete."""
+"""Pricing request service: submit, fulfil, estimate, list, resubmit, delete."""
 
 from __future__ import annotations
 
@@ -6,12 +6,14 @@ import io
 import logging
 import math
 from datetime import datetime, timezone
+from decimal import Decimal
 from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from hlp.api.schemas.common import PaginatedResponse
+from hlp.api.schemas.estimator import EstimatorSubmission
 from hlp.api.schemas.pricing_request import (
     PricingRequestCreate,
     PricingRequestDetailRead,
@@ -26,12 +28,15 @@ from hlp.models.profile import Profile
 from hlp.models.stage_lot import StageLot
 from hlp.repositories import pricing_request_repository
 from hlp.shared import notification_service
-from hlp.shared.clash_service import validate_clash_submission, get_restricted_lots_for
+from hlp.shared.clash_service import get_restricted_lots_for, validate_clash_submission
 from hlp.shared.exceptions import (
     ClashViolationError,
     NotAuthorizedError,
-    PricingRequestNotFoundError,
-    TemplateNotFoundError,
+)
+from hlp.shared.pricing_engine import (
+    LotPricingInput,
+    PricingContext,
+    calculate_batch,
 )
 from hlp.shared.spreadsheet_service import generate_pricing_spreadsheet
 from hlp.shared.storage_service import get_storage_service
@@ -101,23 +106,13 @@ def submit_pricing_request(
         status=PricingRequestStatus.PENDING,
         form_data=form_data,
         lot_numbers=lot_numbers,
+        submitted_at=datetime.now(timezone.utc),
     )
     db.flush()
 
-    # 4. Get template for brand and generate spreadsheet
-    template = get_template_for_brand(db, payload.brand)
-    if template is None:
-        raise TemplateNotFoundError(f"No pricing template uploaded for {payload.brand}")
-
-    generated_path = generate_pricing_spreadsheet(db, request, template)
-
-    # 5. Update request with generated file path and submitted timestamp
-    pricing_request_repository.update(
-        db,
-        request,
-        generated_file_path=generated_path,
-        submitted_at=datetime.now(timezone.utc),
-    )
+    # Spreadsheet generation now happens after estimator submits site costs
+    # (in submit_estimate). The request stays in Pending status until an
+    # estimator is assigned.
 
     return request
 
@@ -178,6 +173,12 @@ def fulfil_pricing_request(
 
     if request.status == PricingRequestStatus.COMPLETED:
         raise ValueError("Request is already completed")
+    if request.status not in (
+        PricingRequestStatus.PRICED,
+        PricingRequestStatus.IN_PROGRESS,
+        PricingRequestStatus.PENDING,  # backward compat
+    ):
+        raise ValueError(f"Cannot fulfil request in '{request.status.value}' status")
 
     # 1. Save uploaded file
     storage = get_storage_service()
@@ -278,6 +279,155 @@ def _extract_and_import_packages(
     wb.close()
 
 
+def assign_estimator(
+    db: Session,
+    request_id: int,
+    estimator_id: int,
+    assigner_profile: Profile,
+) -> PricingRequest:
+    """Assign an estimator to a pending pricing request."""
+    request = pricing_request_repository.get_or_raise(db, request_id)
+
+    if request.status != PricingRequestStatus.PENDING:
+        raise ValueError(
+            f"Can only assign estimator to Pending requests, "
+            f"current status is '{request.status.value}'"
+        )
+
+    # Validate the assigner is admin or pricing
+    if not _is_admin_or_pricing(assigner_profile):
+        raise NotAuthorizedError("Only admin or pricing users can assign estimators")
+
+    # Validate estimator has pricing or admin role
+    estimator = db.get(Profile, estimator_id)
+    if estimator is None:
+        raise ValueError(f"Estimator profile {estimator_id} not found")
+    estimator_roles = {ur.role for ur in estimator.user_roles}
+    if not (estimator_roles & {UserRoleType.PRICING, UserRoleType.ADMIN}):
+        raise ValueError("Estimator must have pricing or admin role")
+
+    pricing_request_repository.update(
+        db,
+        request,
+        estimator_id=estimator_id,
+        status=PricingRequestStatus.ESTIMATING,
+    )
+    return request
+
+
+def submit_estimate(
+    db: Session,
+    request_id: int,
+    submission: EstimatorSubmission,
+    estimator_profile: Profile,
+) -> PricingRequest:
+    """Submit site cost estimates, trigger pricing engine, generate spreadsheet."""
+    request = pricing_request_repository.get_or_raise(db, request_id)
+
+    if request.status != PricingRequestStatus.ESTIMATING:
+        raise ValueError(
+            f"Can only submit estimates for Estimating requests, "
+            f"current status is '{request.status.value}'"
+        )
+
+    # Validate the submitter is the assigned estimator or admin
+    is_admin = _has_role(estimator_profile, UserRoleType.ADMIN)
+    if not is_admin and request.estimator_id != estimator_profile.profile_id:
+        raise NotAuthorizedError(
+            "Only the assigned estimator or admin can submit estimates"
+        )
+
+    # Store site cost inputs as JSONB
+    site_cost_data = {
+        li.lot_number: li.model_dump(mode="json")
+        for li in submission.lot_inputs
+    }
+
+    # Build pricing context from form_data
+    form_data = request.form_data or {}
+    estate = db.get(Estate, request.estate_id)
+
+    ctx = PricingContext(
+        estate_id=request.estate_id,
+        stage_id=request.stage_id,
+        brand=request.brand,
+        suburb=estate.suburb if estate else "",
+        postcode=estate.postcode if estate else "",
+        bdm_profile_id=form_data.get("bdm_profile_id"),
+        wholesale_group_name=form_data.get("wholesale_group"),
+        is_kdrb=form_data.get("is_kdrb", False),
+        is_10_90_deal=form_data.get("is_10_90_deal", False),
+        holding_costs_apply=form_data.get("holding_costs_apply", False),
+        developer_land_referrals=form_data.get("developer_land_referrals", False),
+        building_crossover=form_data.get("building_crossover", False),
+        shared_crossovers=form_data.get("shared_crossovers", False),
+    )
+
+    # Build lot pricing inputs from form_data lots + estimator site cost inputs
+    lots_data = form_data.get("lots", [])
+    lot_inputs: list[LotPricingInput] = []
+
+    for lot_entry in lots_data:
+        lot_number = str(lot_entry.get("lot_number", ""))
+        site_input = site_cost_data.get(lot_number, {})
+
+        # Look up lot record for dimensions
+        lot_record = db.execute(
+            select(StageLot).where(
+                StageLot.stage_id == request.stage_id,
+                StageLot.lot_number == lot_number,
+            )
+        ).scalars().first()
+
+        lot_inputs.append(
+            LotPricingInput(
+                lot_number=lot_number,
+                lot_frontage=Decimal(str(lot_record.frontage)) if lot_record else Decimal("0"),
+                lot_depth=Decimal(str(lot_record.depth)) if lot_record else Decimal("0"),
+                lot_size_sqm=Decimal(str(lot_record.size_sqm)) if lot_record else Decimal("0"),
+                land_price=Decimal(str(lot_record.land_price)) if lot_record else Decimal("0"),
+                corner_block=bool(lot_record.corner_block) if lot_record else False,
+                orientation=str(lot_record.orientation) if lot_record else "N",
+                house_name=str(lot_entry.get("house_type", "")),
+                facade_name=str(lot_entry.get("facade_type", "")),
+                garage_side=str(lot_entry.get("garage_side", "Left") or "Left"),
+                fall_mm=int(site_input.get("fall_mm", 0)),
+                fill_trees=bool(site_input.get("fill_trees", False)),
+                easement_proximity_lhs=bool(site_input.get("easement_proximity_lhs", False)),
+                easement_proximity_rhs=bool(site_input.get("easement_proximity_rhs", False)),
+                retaining_lhs=bool(site_input.get("retaining_lhs", False)),
+                retaining_rhs=bool(site_input.get("retaining_rhs", False)),
+            )
+        )
+
+    # Run pricing engine
+    breakdowns = calculate_batch(db, ctx, lot_inputs)
+    price_breakdown_data = [bd.to_dict() for bd in breakdowns]
+
+    # Generate spreadsheet
+    generated_path = None
+    try:
+        template = get_template_for_brand(db, request.brand)
+        if template is not None:
+            generated_path = generate_pricing_spreadsheet(db, request, template)
+    except Exception as exc:
+        logger.warning("Spreadsheet generation failed: %s", exc)
+
+    # Update request
+    pricing_request_repository.update(
+        db,
+        request,
+        site_cost_inputs=site_cost_data,
+        price_breakdown=price_breakdown_data,
+        estimated_at=datetime.now(timezone.utc),
+        status=PricingRequestStatus.PRICED,
+        generated_file_path=generated_path,
+        pricing_engine_version="3.0",
+    )
+
+    return request
+
+
 def get_request_detail(
     db: Session,
     request_id: int,
@@ -295,6 +445,7 @@ def get_request_detail(
     requester = db.get(Profile, request.requester_id)
     estate = db.get(Estate, request.estate_id)
     stage = db.get(EstateStage, request.stage_id)
+    estimator = db.get(Profile, request.estimator_id) if request.estimator_id else None
 
     base = PricingRequestRead.model_validate(request).model_dump()
     return PricingRequestDetailRead(
@@ -302,6 +453,7 @@ def get_request_detail(
         requester_name=f"{requester.first_name} {requester.last_name}" if requester else None,
         estate_name=estate.estate_name if estate else None,
         stage_name=stage.name if stage else None,
+        estimator_name=f"{estimator.first_name} {estimator.last_name}" if estimator else None,
     )
 
 

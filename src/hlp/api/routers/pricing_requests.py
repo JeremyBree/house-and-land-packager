@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from hlp.api.deps import get_current_user, get_db, require_roles
 from hlp.api.schemas.common import PaginatedResponse
+from hlp.api.schemas.estimator import EstimatorAssignment, EstimatorSubmission
 from hlp.api.schemas.pricing_request import (
     PricingRequestCreate,
     PricingRequestDetailRead,
@@ -137,6 +138,61 @@ def download_completed_sheet(
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+@router.post(
+    "/{request_id}/assign-estimator",
+    response_model=PricingRequestRead,
+)
+def assign_estimator(
+    request_id: int,
+    payload: EstimatorAssignment,
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[Profile, Depends(require_admin_or_pricing)],
+) -> PricingRequestRead:
+    request = pricing_request_service.assign_estimator(
+        db, request_id, payload.estimator_id, current_user
+    )
+    db.commit()
+    db.refresh(request)
+    return PricingRequestRead.model_validate(request)
+
+
+@router.post(
+    "/{request_id}/submit-estimate",
+    response_model=PricingRequestDetailRead,
+)
+def submit_estimate(
+    request_id: int,
+    payload: EstimatorSubmission,
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[Profile, Depends(get_current_user)],
+) -> PricingRequestDetailRead:
+    request = pricing_request_service.submit_estimate(
+        db, request_id, payload, current_user
+    )
+    db.commit()
+    db.refresh(request)
+    return pricing_request_service.get_request_detail(db, request_id, current_user)
+
+
+@router.get(
+    "/{request_id}/price-breakdown",
+    response_model=list[dict],
+)
+def get_price_breakdown(
+    request_id: int,
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[Profile, Depends(get_current_user)],
+) -> list[dict]:
+    """Get the price breakdown for a priced request."""
+    from hlp.models.enums import PricingRequestStatus
+    from hlp.repositories import pricing_request_repository
+
+    request = pricing_request_repository.get_or_raise(db, request_id)
+    if request.status in (PricingRequestStatus.PENDING, PricingRequestStatus.ESTIMATING):
+        raise PricingRequestNotFoundError("Price breakdown not available until estimation is complete")
+    return request.price_breakdown or []
 
 
 @router.post(

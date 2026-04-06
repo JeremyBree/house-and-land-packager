@@ -15,6 +15,7 @@ from hlp.models.estate import Estate
 from hlp.models.estate_document import EstateDocument
 from hlp.models.estate_stage import EstateStage
 from hlp.models.house_package import HousePackage
+from hlp.models.pricing_config import PricingConfig
 from hlp.models.pricing_rule import GlobalPricingRule, StagePricingRule
 from hlp.models.pricing_rule_category import PricingRuleCategory
 from hlp.models.region import Region
@@ -167,6 +168,7 @@ def seed_dev(db: Session) -> None:
     _seed_clash_rules(db)
     _seed_house_packages(db)
     _seed_pricing_categories_and_rules(db)
+    _seed_pricing_configs(db)
 
     for user_fields in USERS:
         existing = profile_repository.get_by_email(db, user_fields["email"])
@@ -709,4 +711,16 @@ def _seed_pricing_categories_and_rules(db: Session) -> None:
                 spec["estate_id"],
                 spec["stage_id"],
             )
+    db.flush()
+
+
+def _seed_pricing_configs(db: Session) -> None:
+    """Seed default PricingConfig for both brands (idempotent)."""
+    for brand in ("Hermitage Homes", "Kingsbridge Homes"):
+        existing = db.execute(
+            select(PricingConfig).where(PricingConfig.brand == brand)
+        ).scalar_one_or_none()
+        if existing is None:
+            db.add(PricingConfig(brand=brand))
+            logger.info("Seeded pricing config for %s (defaults)", brand)
     db.flush()
