@@ -359,3 +359,75 @@ export interface ConflictSummary {
   by_type: Record<string, number>
   by_estate: Array<{ estate_id: number; estate_name: string; count: number }>
 }
+
+// --- Sprint 5: Pricing Templates & Rules ---
+
+export interface PricingTemplateRead {
+  template_id: number
+  brand: string
+  file_path: string
+  sheet_name: string
+  data_start_row: number
+  header_mappings: Record<string, { row: number; col: number }>
+  column_mappings: Record<string, number>
+  data_validations: Record<string, string[]>
+  created_at: string
+  updated_at: string
+}
+
+export interface PricingRuleCategoryRead {
+  category_id: number
+  name: string
+  brand: string
+  sort_order: number
+}
+
+export interface PricingRuleCategoryInput {
+  name: string
+  brand: string
+  sort_order?: number
+}
+
+export interface GlobalPricingRuleRead {
+  rule_id: number
+  brand: string
+  item_name: string
+  cost: string
+  condition: string | null
+  condition_value: string | null
+  cell_row: number
+  cell_col: number
+  cost_cell_row: number
+  cost_cell_col: number
+  category_id: number | null
+  sort_order: number
+  created_at: string
+  updated_at: string
+  category_name?: string | null
+}
+
+export interface GlobalPricingRuleInput {
+  brand: string
+  item_name: string
+  cost: string
+  condition?: string | null
+  condition_value?: string | null
+  cell_row: number
+  cell_col: number
+  cost_cell_row: number
+  cost_cell_col: number
+  category_id?: number | null
+  sort_order?: number
+}
+
+export interface StagePricingRuleRead extends GlobalPricingRuleRead {
+  estate_id: number
+  stage_id: number
+  estate_name?: string | null
+  stage_name?: string | null
+}
+
+export interface StagePricingRuleInput extends GlobalPricingRuleInput {
+  estate_id: number
+  stage_id: number
+}

@@ -2,12 +2,14 @@ import { NavLink } from 'react-router-dom'
 import {
   AlertTriangle,
   Building2,
+  Calculator,
   FileText,
   LayoutDashboard,
   MapPin,
   Package,
   Search,
   ShieldCheck,
+  SlidersHorizontal,
   Users,
   Briefcase,
 } from 'lucide-react'
@@ -35,6 +37,8 @@ const adminNav: NavItem[] = [
   { to: '/admin/users', label: 'Users', icon: Users },
   { to: '/admin/regions', label: 'Regions', icon: MapPin },
   { to: '/admin/developers', label: 'Developers', icon: Briefcase },
+  { to: '/admin/pricing-templates', label: 'Pricing Templates', icon: SlidersHorizontal },
+  { to: '/admin/pricing-rules', label: 'Pricing Rules', icon: Calculator },
 ]
 
 export function Sidebar() {

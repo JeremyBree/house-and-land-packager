@@ -14,6 +14,9 @@ import ConflictsPage from '@/pages/conflicts/ConflictsPage'
 import UsersPage from '@/pages/admin/UsersPage'
 import RegionsPage from '@/pages/admin/RegionsPage'
 import DevelopersPage from '@/pages/admin/DevelopersPage'
+import PricingTemplatesPage from '@/pages/admin/PricingTemplatesPage'
+import PricingRulesPage from '@/pages/admin/PricingRulesPage'
+import StageRulesPage from '@/pages/admin/StageRulesPage'
 
 export function AppRoutes() {
   return (
@@ -48,6 +51,9 @@ export function AppRoutes() {
         <Route path="/admin/users" element={<UsersPage />} />
         <Route path="/admin/regions" element={<RegionsPage />} />
         <Route path="/admin/developers" element={<DevelopersPage />} />
+        <Route path="/admin/pricing-templates" element={<PricingTemplatesPage />} />
+        <Route path="/admin/pricing-rules" element={<PricingRulesPage />} />
+        <Route path="/admin/stage-rules" element={<StageRulesPage />} />
       </Route>
 
       <Route path="*" element={<NotFoundPage />} />

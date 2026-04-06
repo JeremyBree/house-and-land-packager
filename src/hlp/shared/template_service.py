@@ -145,7 +145,7 @@ def _guess_field_name(
         # Get first cell in validation range
         sqref = str(dv.sqref)
         cell_ref = sqref.split(":")[0].split(" ")[0]
-        from openpyxl.utils import column_index_from_string, coordinate_from_string
+        from openpyxl.utils.cell import column_index_from_string, coordinate_from_string
 
         col_letter, _row = coordinate_from_string(cell_ref)
         col_idx = column_index_from_string(col_letter)

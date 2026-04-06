@@ -63,6 +63,10 @@ def _truncate_tables(engine: Engine):
     """Wipe Sprint 1+2 tables before each integration test for isolation."""
     with engine.begin() as conn:
         for table in (
+            "stage_pricing_rules",
+            "global_pricing_rules",
+            "pricing_rule_categories",
+            "pricing_templates",
             "house_packages",
             "clash_rules",
             "filter_presets",

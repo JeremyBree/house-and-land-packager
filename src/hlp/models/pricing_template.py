@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from sqlalchemy import Integer, String
+from sqlalchemy import Integer, JSON, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -18,6 +18,12 @@ class PricingTemplate(Base, TimestampMixin):
     file_path: Mapped[str] = mapped_column(String(500), nullable=False)
     sheet_name: Mapped[str] = mapped_column(String(100), nullable=False)
     data_start_row: Mapped[int] = mapped_column(Integer, nullable=False)
-    header_mappings: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
-    column_mappings: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
-    data_validations: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    header_mappings: Mapped[dict[str, Any]] = mapped_column(
+        JSONB().with_variant(JSON(), "sqlite"), default=dict, nullable=False
+    )
+    column_mappings: Mapped[dict[str, Any]] = mapped_column(
+        JSONB().with_variant(JSON(), "sqlite"), default=dict, nullable=False
+    )
+    data_validations: Mapped[dict[str, Any]] = mapped_column(
+        JSONB().with_variant(JSON(), "sqlite"), default=dict, nullable=False
+    )
