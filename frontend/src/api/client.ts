@@ -1,6 +1,7 @@
 import axios, { AxiosError } from 'axios'
 
-const baseURL = import.meta.env.VITE_API_BASE_URL || ''
+// Frontend is served from the same origin as the API -- no absolute URL needed.
+const baseURL = ''
 
 export const TOKEN_STORAGE_KEY = 'hlp.token'
 

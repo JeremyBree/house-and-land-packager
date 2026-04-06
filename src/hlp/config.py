@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     storage_base_path: str = "/data/storage"
     log_level: str = "INFO"
     cors_origins: str = "http://localhost:5173"
+    site_password: str = ""  # Empty = disabled (no site gate)
 
     model_config = {"env_file": ".env", "extra": "ignore"}
 

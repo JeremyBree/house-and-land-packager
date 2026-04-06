@@ -1,12 +1,15 @@
 """FastAPI application factory."""
 
+import hashlib
 import logging
+import os
 import sys
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -32,8 +35,11 @@ from hlp.api.routers import pricing_templates as pricing_templates_router
 from hlp.api.routers import regions as regions_router
 from hlp.api.routers import stages as stages_router
 from hlp.api.routers import users as users_router
+from hlp.api.middleware.site_auth import SiteAuthMiddleware, _PASSWORD_PAGE, _hash_password
 from hlp.config import get_settings
 from hlp.database import Base, get_db, get_engine
+
+STATIC_DIR = "/app/static"
 from hlp.shared.exceptions import (
     AuthenticationError,
     CategoryNotFoundError,
@@ -238,6 +244,9 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    # Site-wide password gate (before everything else; CORS must wrap it).
+    application.add_middleware(SiteAuthMiddleware)
+
     _register_exception_handlers(application)
 
     @application.get("/api/health")
@@ -287,6 +296,45 @@ def create_app() -> FastAPI:
     application.include_router(dashboard_router.router)
     application.include_router(configurations_router.router)
     application.include_router(ingestion_logs_router.router)
+
+    # ---- Site password endpoint ------------------------------------------------
+    @application.post("/site-auth")
+    async def site_auth(request: Request, password: str = Form(...)):
+        """Validate the site-wide password and set an access cookie."""
+        if password == settings.site_password:
+            response = RedirectResponse(url="/", status_code=302)
+            is_secure = request.url.scheme == "https"
+            response.set_cookie(
+                key="site_access",
+                value=_hash_password(password),
+                httponly=True,
+                secure=is_secure,
+                samesite="lax",
+                max_age=86400 * 30,  # 30 days
+            )
+            return response
+        # Wrong password -- re-render the form with an error.
+        error_html = '<p style="color:#dc2626;font-size:13px;margin:1rem 0 0;">Incorrect password.</p>'
+        return HTMLResponse(
+            content=_PASSWORD_PAGE.replace("{error_html}", error_html),
+            status_code=403,
+        )
+
+    # ---- Serve React SPA (only when built frontend is present) -----------------
+    if os.path.isdir(STATIC_DIR):
+        application.mount(
+            "/assets",
+            StaticFiles(directory=os.path.join(STATIC_DIR, "assets")),
+            name="static-assets",
+        )
+
+        @application.get("/{full_path:path}")
+        async def serve_spa(full_path: str):
+            """Serve static files or fall back to index.html for SPA routing."""
+            file_path = os.path.join(STATIC_DIR, full_path)
+            if os.path.isfile(file_path):
+                return FileResponse(file_path)
+            return FileResponse(os.path.join(STATIC_DIR, "index.html"))
 
     return application
 
