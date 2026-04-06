@@ -25,3 +25,5 @@ class HousePackage(Base, TimestampMixin):
     source: Mapped[str | None] = mapped_column(String(500))
     status: Mapped[str | None] = mapped_column(String(50))
     flyer_path: Mapped[str | None] = mapped_column(String(500))
+    design_id: Mapped[int | None] = mapped_column(ForeignKey("house_designs.design_id"))
+    facade_id: Mapped[int | None] = mapped_column(ForeignKey("house_facades.facade_id"))

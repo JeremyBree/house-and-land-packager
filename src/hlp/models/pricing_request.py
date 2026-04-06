@@ -39,3 +39,7 @@ class PricingRequest(Base, TimestampMixin):
     )
     submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    price_breakdown: Mapped[dict[str, Any] | None] = mapped_column(
+        JSONB().with_variant(JSON(), "sqlite"), default=None
+    )
+    pricing_engine_version: Mapped[str | None] = mapped_column(String(20))

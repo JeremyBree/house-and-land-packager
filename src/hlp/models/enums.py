@@ -68,6 +68,7 @@ class UserRoleType(str, enum.Enum):
     PRICING = "pricing"
     SALES = "sales"
     REQUESTER = "requester"
+    BDM = "bdm"
 
 
 # Shared SQLAlchemy Enum type instances — reuse these across models to avoid

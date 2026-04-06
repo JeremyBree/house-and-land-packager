@@ -57,6 +57,21 @@ SPRINT1_TABLES = (
     # Sprint 7 additions
     "configurations",
     "ingestion_logs",
+    # Pricing engine additions
+    "house_designs",
+    "house_facades",
+    "energy_ratings",
+    "upgrade_categories",
+    "upgrade_items",
+    "wholesale_groups",
+    "commission_rates",
+    "travel_surcharges",
+    "postcode_site_costs",
+    "guideline_types",
+    "estate_design_guidelines",
+    "fbc_escalation_bands",
+    "site_cost_tiers",
+    "site_cost_items",
 )
 
 
@@ -102,6 +117,18 @@ def db_session(engine: Engine) -> Iterator[Session]:
         # Clean tables in FK-safe order.
         with engine.begin() as conn:
             for table in (
+                "site_cost_items",
+                "site_cost_tiers",
+                "fbc_escalation_bands",
+                "estate_design_guidelines",
+                "guideline_types",
+                "postcode_site_costs",
+                "travel_surcharges",
+                "commission_rates",
+                "wholesale_groups",
+                "upgrade_items",
+                "upgrade_categories",
+                "energy_ratings",
                 "ingestion_logs",
                 "configurations",
                 "notifications",
@@ -111,6 +138,8 @@ def db_session(engine: Engine) -> Iterator[Session]:
                 "pricing_rule_categories",
                 "pricing_templates",
                 "house_packages",
+                "house_facades",
+                "house_designs",
                 "clash_rules",
                 "filter_presets",
                 "user_roles",

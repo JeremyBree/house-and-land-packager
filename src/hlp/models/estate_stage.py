@@ -21,6 +21,7 @@ class EstateStage(Base, TimestampMixin):
         pg_stage_status, default=StageStatus.ACTIVE, nullable=False
     )
     release_date: Mapped[date | None] = mapped_column(Date)
+    pos_number: Mapped[str | None] = mapped_column(String(20))
 
     estate: Mapped["Estate"] = relationship(back_populates="stages")  # noqa: F821
     lots: Mapped[list["StageLot"]] = relationship(  # noqa: F821
