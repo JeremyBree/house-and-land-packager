@@ -13,12 +13,15 @@ from sqlalchemy.orm import Session
 import hlp.models  # noqa: F401  # register all models on Base.metadata
 from hlp.api.routers import auth as auth_router
 from hlp.api.routers import clash_rules as clash_rules_router
+from hlp.api.routers import configurations as configurations_router
 from hlp.api.routers import conflicts as conflicts_router
+from hlp.api.routers import dashboard as dashboard_router
 from hlp.api.routers import developers as developers_router
 from hlp.api.routers import documents as documents_router
 from hlp.api.routers import estates as estates_router
 from hlp.api.routers import files as files_router
 from hlp.api.routers import filter_presets as filter_presets_router
+from hlp.api.routers import ingestion_logs as ingestion_logs_router
 from hlp.api.routers import lot_search as lot_search_router
 from hlp.api.routers import lots as lots_router
 from hlp.api.routers import notifications as notifications_router
@@ -281,6 +284,9 @@ def create_app() -> FastAPI:
     application.include_router(pricing_rules_router.rules_router)
     application.include_router(pricing_requests_router.router)
     application.include_router(notifications_router.router)
+    application.include_router(dashboard_router.router)
+    application.include_router(configurations_router.router)
+    application.include_router(ingestion_logs_router.router)
 
     return application
 

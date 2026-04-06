@@ -27,25 +27,57 @@ The API service consolidates REST API, packaging engine, agent orchestrator, and
 
 ### Key Backend Modules
 
-- `src/hlp/api/` — FastAPI routers, Pydantic schemas, middleware
-- `src/hlp/models/` — SQLAlchemy ORM models (15 tables)
-- `src/hlp/repositories/` — Data access layer with typed query methods
+- `src/hlp/api/` — FastAPI routers (112 routes), Pydantic schemas, middleware
+- `src/hlp/api/routers/` — auth, estates, stages, lots, lot_search, documents, files, filter_presets, clash_rules, packages, conflicts, pricing_templates, pricing_rules, pricing_requests, notifications, users, regions, developers, dashboard, configurations, ingestion_logs
+- `src/hlp/api/schemas/` — auth, estate, stage, lot, lot_search, document, filter_preset, clash_rule, house_package, conflict, pricing_template, pricing_rule, pricing_request, notification, user, region, developer, dashboard, configuration, ingestion_log, common
+- `src/hlp/models/` — SQLAlchemy ORM models (19 tables)
+- `src/hlp/repositories/` — Data access layer: estate, stage, lot, lot_search, status_history, document, filter_preset, clash_rule, house_package, pricing_template, pricing_rule, pricing_request, notification, profile, region, developer, configuration, ingestion_log
 - `src/hlp/agents/` — Ingestion agents (email, scraper, portal, PDF) + AI extraction pipeline
 - `src/hlp/orchestrator/` — Scheduler, dispatcher, lot lifecycle engine, conflict resolution
 - `src/hlp/packaging/` — Spreadsheet generator, clash validator, pricing rule evaluator, package importer
-- `src/hlp/shared/` — Auth, logging, storage abstraction, CSV/XLSX export
+- `src/hlp/shared/` — Auth, logging, storage abstraction, CSV/XLSX export, conflict_service, user_service
 
 ### Key Frontend Modules
 
+- `frontend/src/pages/DashboardPage.tsx` — Live dashboard with metrics, status breakdown, recent requests
 - `frontend/src/components/lsi/` — Land Search Interface (filter panel, results table, lot detail)
 - `frontend/src/components/pricing/` — Pricing request form and tracking
 - `frontend/src/components/estates/` — Estate, stage, lot, clash rule management
 - `frontend/src/components/packages/` — Package browsing and management
 - `frontend/src/components/admin/` — User management, pricing templates, pricing rules
+- `frontend/src/pages/admin/ConfigurationsPage.tsx` — Ingestion source configuration CRUD
+- `frontend/src/pages/admin/IngestionLogsPage.tsx` — Agent run log viewer
+- `frontend/src/api/` — API client modules: auth, estates, stages, lots, lotSearch, documents, filterPresets, clashRules, packages, conflicts, pricingTemplates, pricingRules, pricingRequests, notifications, users, regions, developers, dashboard, configurations, ingestionLogs
 
 ### Data Model
 
-15 tables: `regions`, `developers`, `estates`, `estate_stages`, `stage_lots`, `status_history`, `house_packages`, `clash_rules`, `pricing_requests`, `pricing_templates`, `global_pricing_rules`, `stage_pricing_rules`, `pricing_rule_categories`, `profiles`, `user_roles`, `notifications`, `estate_documents`, `ingestion_log`, `configuration`.
+19 tables: `regions`, `developers`, `estates`, `estate_stages`, `stage_lots`, `status_history`, `house_packages`, `clash_rules`, `pricing_requests`, `pricing_templates`, `global_pricing_rules`, `stage_pricing_rules`, `pricing_rule_categories`, `profiles`, `user_roles`, `notifications`, `estate_documents`, `ingestion_logs`, `configurations`, `filter_presets`.
+
+### API Endpoint Groups (112 routes)
+
+- `/api/auth` — login, register, me
+- `/api/users` — user CRUD, role management
+- `/api/regions` — region CRUD
+- `/api/developers` — developer CRUD
+- `/api/estates` — estate CRUD with filtering
+- `/api/estates/{id}/stages` — stage management (estate-scoped)
+- `/api/stages/{id}/lots` — lot management (stage-scoped)
+- `/api/lots` — lot operations (status transitions, bulk)
+- `/api/lots/search` — Land Search Interface with advanced filtering, CSV/XLSX export
+- `/api/estates/{id}/documents` — document upload/management
+- `/api/files/{path}` — file serving
+- `/api/filter-presets` — saved search presets
+- `/api/estates/{id}/clash-rules` — clash rule CRUD
+- `/api/packages` — house package CRUD with filtering
+- `/api/conflicts` — conflict detection and summary
+- `/api/pricing-templates` — pricing template management
+- `/api/pricing-rule-categories` — rule category management
+- `/api/pricing-rules` — global and stage pricing rules
+- `/api/pricing-requests` — pricing request workflow (submit, fulfil, download)
+- `/api/notifications` — notification management
+- `/api/dashboard` — aggregated dashboard metrics
+- `/api/configurations` — ingestion source configuration CRUD
+- `/api/ingestion-logs` — ingestion log viewer
 
 Lot uniqueness is `(stage_id, lot_number)`. Clash rules are scoped to `(estate_id, stage_id)`. Pricing rules can be global (brand-wide) or stage-specific.
 

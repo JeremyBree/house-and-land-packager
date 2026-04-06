@@ -54,6 +54,9 @@ SPRINT1_TABLES = (
     # Sprint 6 additions
     "pricing_requests",
     "notifications",
+    # Sprint 7 additions
+    "configurations",
+    "ingestion_logs",
 )
 
 
@@ -99,6 +102,8 @@ def db_session(engine: Engine) -> Iterator[Session]:
         # Clean tables in FK-safe order.
         with engine.begin() as conn:
             for table in (
+                "ingestion_logs",
+                "configurations",
                 "notifications",
                 "pricing_requests",
                 "stage_pricing_rules",

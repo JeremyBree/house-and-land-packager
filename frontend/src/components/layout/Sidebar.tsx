@@ -3,7 +3,9 @@ import {
   AlertTriangle,
   Building2,
   Calculator,
+  ClipboardList,
   FileText,
+  Globe,
   LayoutDashboard,
   MapPin,
   Package,
@@ -39,6 +41,8 @@ const adminNav: NavItem[] = [
   { to: '/admin/developers', label: 'Developers', icon: Briefcase },
   { to: '/admin/pricing-templates', label: 'Pricing Templates', icon: SlidersHorizontal },
   { to: '/admin/pricing-rules', label: 'Pricing Rules', icon: Calculator },
+  { to: '/admin/configurations', label: 'Configurations', icon: Globe },
+  { to: '/admin/ingestion-logs', label: 'Ingestion Logs', icon: ClipboardList },
 ]
 
 export function Sidebar() {
