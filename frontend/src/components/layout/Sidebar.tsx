@@ -29,7 +29,7 @@ const mainNav: NavItem[] = [
   { to: '/estates', label: 'Estates', icon: Building2 },
   { to: '/packages', label: 'Packages', icon: Package },
   { to: '/conflicts', label: 'Conflicts', icon: AlertTriangle },
-  { to: '/pricing-requests', label: 'Pricing Requests', icon: FileText, disabled: true, tooltip: 'Coming soon' },
+  { to: '/pricing-requests', label: 'Pricing Requests', icon: FileText },
   { to: '/lsi', label: 'Land Search', icon: Search },
 ]
 

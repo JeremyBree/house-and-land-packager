@@ -60,9 +60,11 @@ TEST_USERS = {
 
 @pytest.fixture(autouse=True)
 def _truncate_tables(engine: Engine):
-    """Wipe Sprint 1+2 tables before each integration test for isolation."""
+    """Wipe Sprint 1-6 tables before each integration test for isolation."""
     with engine.begin() as conn:
         for table in (
+            "notifications",
+            "pricing_requests",
             "stage_pricing_rules",
             "global_pricing_rules",
             "pricing_rule_categories",

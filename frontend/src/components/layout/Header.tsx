@@ -10,12 +10,15 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/hooks/useAuth'
+import { NotificationBell } from '@/components/notifications/NotificationBell'
 
 const TITLES: Record<string, string> = {
   '/dashboard': 'Dashboard',
   '/estates': 'Estates',
   '/packages': 'Packages',
   '/pricing-requests': 'Pricing Requests',
+  '/pricing-requests/new': 'New Pricing Request',
+  '/notifications': 'Notifications',
   '/lsi': 'Land Search',
   '/admin/users': 'Users',
   '/admin/regions': 'Regions',
@@ -25,6 +28,7 @@ const TITLES: Record<string, string> = {
 function getTitle(path: string): string {
   if (TITLES[path]) return TITLES[path]
   if (path.startsWith('/estates/')) return 'Estate Details'
+  if (path.startsWith('/pricing-requests/')) return 'Pricing Request Details'
   return 'HBG Packager'
 }
 
@@ -41,6 +45,8 @@ export function Header() {
   return (
     <header className="flex h-16 shrink-0 items-center justify-between border-b bg-background px-6">
       <h1 className="text-lg font-semibold">{getTitle(location.pathname)}</h1>
+      <div className="flex items-center gap-2">
+      <NotificationBell />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="sm" className="gap-2">
@@ -64,6 +70,7 @@ export function Header() {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+      </div>
     </header>
   )
 }

@@ -21,7 +21,9 @@ from hlp.api.routers import files as files_router
 from hlp.api.routers import filter_presets as filter_presets_router
 from hlp.api.routers import lot_search as lot_search_router
 from hlp.api.routers import lots as lots_router
+from hlp.api.routers import notifications as notifications_router
 from hlp.api.routers import packages as packages_router
+from hlp.api.routers import pricing_requests as pricing_requests_router
 from hlp.api.routers import pricing_rules as pricing_rules_router
 from hlp.api.routers import pricing_templates as pricing_templates_router
 from hlp.api.routers import regions as regions_router
@@ -33,6 +35,7 @@ from hlp.shared.exceptions import (
     AuthenticationError,
     CategoryNotFoundError,
     ClashRuleNotFoundError,
+    ClashViolationError,
     DocumentNotFoundError,
     DuplicateClashRuleError,
     DuplicateEmailError,
@@ -49,6 +52,7 @@ from hlp.shared.exceptions import (
     NotAuthorizedError,
     NotFoundError,
     PackageNotFoundError,
+    PricingRequestNotFoundError,
     PricingRuleNotFoundError,
     StageNotFoundError,
     TemplateNotFoundError,
@@ -107,6 +111,21 @@ def _register_exception_handlers(application: FastAPI) -> None:
     @application.exception_handler(NotAuthorizedError)
     async def _notauth_err(_: Request, exc: NotAuthorizedError):
         return _error_response(403, str(exc) or "Not authorized", "not_authorized")
+
+    @application.exception_handler(ClashViolationError)
+    async def _clash_violation(_: Request, exc: ClashViolationError):
+        return JSONResponse(
+            status_code=409,
+            content={
+                "detail": str(exc),
+                "code": "clash_violation",
+                "violations": exc.violations,
+            },
+        )
+
+    @application.exception_handler(PricingRequestNotFoundError)
+    async def _pricing_req_nf(_: Request, exc: PricingRequestNotFoundError):
+        return _error_response(404, str(exc), "pricing_request_not_found")
 
     @application.exception_handler(DuplicateEmailError)
     async def _dup_err(_: Request, exc: DuplicateEmailError):
@@ -260,6 +279,8 @@ def create_app() -> FastAPI:
     application.include_router(pricing_templates_router.router)
     application.include_router(pricing_rules_router.categories_router)
     application.include_router(pricing_rules_router.rules_router)
+    application.include_router(pricing_requests_router.router)
+    application.include_router(notifications_router.router)
 
     return application
 

@@ -11,6 +11,10 @@ import StageDetailPage from '@/pages/stages/StageDetailPage'
 import LsiPage from '@/pages/lsi/LsiPage'
 import PackagesPage from '@/pages/packages/PackagesPage'
 import ConflictsPage from '@/pages/conflicts/ConflictsPage'
+import PricingRequestsPage from '@/pages/pricing/PricingRequestsPage'
+import PricingRequestFormPage from '@/pages/pricing/PricingRequestFormPage'
+import PricingRequestDetailPage from '@/pages/pricing/PricingRequestDetailPage'
+import NotificationsPage from '@/pages/notifications/NotificationsPage'
 import UsersPage from '@/pages/admin/UsersPage'
 import RegionsPage from '@/pages/admin/RegionsPage'
 import DevelopersPage from '@/pages/admin/DevelopersPage'
@@ -38,6 +42,10 @@ export function AppRoutes() {
         <Route path="/estates/:estateId/stages/:stageId" element={<StageDetailPage />} />
         <Route path="/packages" element={<PackagesPage />} />
         <Route path="/conflicts" element={<ConflictsPage />} />
+        <Route path="/pricing-requests" element={<PricingRequestsPage />} />
+        <Route path="/pricing-requests/new" element={<PricingRequestFormPage />} />
+        <Route path="/pricing-requests/:id" element={<PricingRequestDetailPage />} />
+        <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/lsi" element={<LsiPage />} />
       </Route>
 

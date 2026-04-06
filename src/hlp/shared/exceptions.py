@@ -95,3 +95,15 @@ class PricingRuleNotFoundError(NotFoundError):
 
 class CategoryNotFoundError(NotFoundError):
     """Raised when a pricing rule category lookup fails."""
+
+
+class PricingRequestNotFoundError(NotFoundError):
+    """Raised when a pricing request lookup fails."""
+
+
+class ClashViolationError(HLPError):
+    """Raised when clash rule violations are detected during pricing request submission."""
+
+    def __init__(self, message: str = "Clash rule violations detected", violations: list[dict] | None = None):
+        super().__init__(message)
+        self.violations = violations or []

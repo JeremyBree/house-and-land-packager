@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import ARRAY, DateTime, ForeignKey, Index, String
+from sqlalchemy import ARRAY, DateTime, ForeignKey, Index, JSON, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -29,9 +29,13 @@ class PricingRequest(Base, TimestampMixin):
         default=PricingRequestStatus.PENDING,
         nullable=False,
     )
-    form_data: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    form_data: Mapped[dict[str, Any]] = mapped_column(
+        JSONB().with_variant(JSON(), "sqlite"), default=dict, nullable=False
+    )
     generated_file_path: Mapped[str | None] = mapped_column(String(500))
     completed_file_path: Mapped[str | None] = mapped_column(String(500))
-    lot_numbers: Mapped[list[str]] = mapped_column(ARRAY(String(50)), default=list, nullable=False)
+    lot_numbers: Mapped[list[str]] = mapped_column(
+        ARRAY(String(50)).with_variant(JSON(), "sqlite"), default=list, nullable=False
+    )
     submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
