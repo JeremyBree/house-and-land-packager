@@ -24,6 +24,7 @@ from hlp.api.routers import documents as documents_router
 from hlp.api.routers import estates as estates_router
 from hlp.api.routers import files as files_router
 from hlp.api.routers import filter_presets as filter_presets_router
+from hlp.api.routers import import_data as import_data_router
 from hlp.api.routers import ingestion_logs as ingestion_logs_router
 from hlp.api.routers import lot_search as lot_search_router
 from hlp.api.routers import lots as lots_router
@@ -296,6 +297,7 @@ def create_app() -> FastAPI:
     application.include_router(dashboard_router.router)
     application.include_router(configurations_router.router)
     application.include_router(ingestion_logs_router.router)
+    application.include_router(import_data_router.router)
 
     # ---- Site password endpoint ------------------------------------------------
     @application.post("/site-auth")
