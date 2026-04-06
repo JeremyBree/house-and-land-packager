@@ -22,6 +22,8 @@ from hlp.api.routers import filter_presets as filter_presets_router
 from hlp.api.routers import lot_search as lot_search_router
 from hlp.api.routers import lots as lots_router
 from hlp.api.routers import packages as packages_router
+from hlp.api.routers import pricing_rules as pricing_rules_router
+from hlp.api.routers import pricing_templates as pricing_templates_router
 from hlp.api.routers import regions as regions_router
 from hlp.api.routers import stages as stages_router
 from hlp.api.routers import users as users_router
@@ -29,6 +31,7 @@ from hlp.config import get_settings
 from hlp.database import Base, get_db, get_engine
 from hlp.shared.exceptions import (
     AuthenticationError,
+    CategoryNotFoundError,
     ClashRuleNotFoundError,
     DocumentNotFoundError,
     DuplicateClashRuleError,
@@ -40,12 +43,15 @@ from hlp.shared.exceptions import (
     HLPError,
     InvalidCsvError,
     InvalidStatusTransitionError,
+    InvalidTemplateError,
     LotNotFoundError,
     MinRolesRequiredError,
     NotAuthorizedError,
     NotFoundError,
     PackageNotFoundError,
+    PricingRuleNotFoundError,
     StageNotFoundError,
+    TemplateNotFoundError,
     UnsupportedFileTypeError,
     UserNotFoundError,
 )
@@ -146,6 +152,22 @@ def _register_exception_handlers(application: FastAPI) -> None:
     async def _dup_clash(_: Request, exc: DuplicateClashRuleError):
         return _error_response(409, str(exc), "duplicate_clash_rule")
 
+    @application.exception_handler(TemplateNotFoundError)
+    async def _template_nf(_: Request, exc: TemplateNotFoundError):
+        return _error_response(404, str(exc), "template_not_found")
+
+    @application.exception_handler(InvalidTemplateError)
+    async def _bad_template(_: Request, exc: InvalidTemplateError):
+        return _error_response(422, str(exc), "invalid_template")
+
+    @application.exception_handler(PricingRuleNotFoundError)
+    async def _rule_nf(_: Request, exc: PricingRuleNotFoundError):
+        return _error_response(404, str(exc), "pricing_rule_not_found")
+
+    @application.exception_handler(CategoryNotFoundError)
+    async def _cat_nf(_: Request, exc: CategoryNotFoundError):
+        return _error_response(404, str(exc), "category_not_found")
+
     @application.exception_handler(NotFoundError)
     async def _nf(_: Request, exc: NotFoundError):
         return _error_response(404, str(exc), "not_found")
@@ -235,6 +257,9 @@ def create_app() -> FastAPI:
     application.include_router(clash_rules_router.rules_router)
     application.include_router(packages_router.router)
     application.include_router(conflicts_router.router)
+    application.include_router(pricing_templates_router.router)
+    application.include_router(pricing_rules_router.categories_router)
+    application.include_router(pricing_rules_router.rules_router)
 
     return application
 

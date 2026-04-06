@@ -79,3 +79,19 @@ class PackageNotFoundError(NotFoundError):
 
 class DuplicateClashRuleError(HLPError):
     """Raised when attempting to create a clash rule that already exists for the scope."""
+
+
+class TemplateNotFoundError(NotFoundError):
+    """Raised when a pricing template lookup fails."""
+
+
+class InvalidTemplateError(HLPError):
+    """Raised when an uploaded pricing template is invalid (bad format, etc.)."""
+
+
+class PricingRuleNotFoundError(NotFoundError):
+    """Raised when a pricing rule lookup fails."""
+
+
+class CategoryNotFoundError(NotFoundError):
+    """Raised when a pricing rule category lookup fails."""

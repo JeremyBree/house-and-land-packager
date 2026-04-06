@@ -15,6 +15,8 @@ from hlp.models.estate import Estate
 from hlp.models.estate_document import EstateDocument
 from hlp.models.estate_stage import EstateStage
 from hlp.models.house_package import HousePackage
+from hlp.models.pricing_rule import GlobalPricingRule, StagePricingRule
+from hlp.models.pricing_rule_category import PricingRuleCategory
 from hlp.models.region import Region
 from hlp.models.stage_lot import StageLot
 from hlp.repositories import profile_repository
@@ -164,6 +166,7 @@ def seed_dev(db: Session) -> None:
     _seed_sample_document(db)
     _seed_clash_rules(db)
     _seed_house_packages(db)
+    _seed_pricing_categories_and_rules(db)
 
     for user_fields in USERS:
         existing = profile_repository.get_by_email(db, user_fields["email"])
@@ -498,3 +501,212 @@ def _seed_house_packages(db: Session) -> None:
         lot.brand = spec["brand"]
     db.flush()
     logger.info("Seeded %d house packages", len(specs))
+
+
+def _seed_pricing_categories_and_rules(db: Session) -> None:
+    """Seed pricing rule categories, global rules, and stage rules (idempotent)."""
+    # --- Categories ---
+    category_specs = [
+        ("Commission", "Hermitage Homes", 0),
+        ("Site Costs", "Hermitage Homes", 1),
+        ("Commission", "Kingsbridge Homes", 0),
+        ("Extras", "Kingsbridge Homes", 1),
+    ]
+    cat_map: dict[tuple[str, str], PricingRuleCategory] = {}
+    for name, brand, sort_order in category_specs:
+        existing = db.execute(
+            select(PricingRuleCategory).where(
+                PricingRuleCategory.name == name,
+                PricingRuleCategory.brand == brand,
+            )
+        ).scalar_one_or_none()
+        if existing is None:
+            cat = PricingRuleCategory(name=name, brand=brand, sort_order=sort_order)
+            db.add(cat)
+            db.flush()
+            logger.info("Seeded pricing category: %s (%s)", name, brand)
+            cat_map[(name, brand)] = cat
+        else:
+            cat_map[(name, brand)] = existing
+
+    # --- Global Rules ---
+    hermitage_commission_id = cat_map[("Commission", "Hermitage Homes")].category_id
+    hermitage_site_id = cat_map[("Site Costs", "Hermitage Homes")].category_id
+    kingsbridge_commission_id = cat_map[("Commission", "Kingsbridge Homes")].category_id
+    kingsbridge_extras_id = cat_map[("Extras", "Kingsbridge Homes")].category_id
+
+    global_rule_specs = [
+        # Hermitage rules
+        {
+            "brand": "Hermitage Homes",
+            "item_name": "$35k Commission",
+            "cost": Decimal("35000.00"),
+            "condition": None,
+            "condition_value": None,
+            "cell_row": 10,
+            "cell_col": 1,
+            "cost_cell_row": 10,
+            "cost_cell_col": 2,
+            "category_id": hermitage_commission_id,
+            "sort_order": 0,
+        },
+        {
+            "brand": "Hermitage Homes",
+            "item_name": "$35k Commission (Whittlesea)",
+            "cost": Decimal("35000.00"),
+            "condition": "wholesale_group:Whittlesea",
+            "condition_value": "Whittlesea",
+            "cell_row": 11,
+            "cell_col": 1,
+            "cost_cell_row": 11,
+            "cost_cell_col": 2,
+            "category_id": hermitage_commission_id,
+            "sort_order": 1,
+        },
+        {
+            "brand": "Hermitage Homes",
+            "item_name": "$2,500 Corner Block",
+            "cost": Decimal("2500.00"),
+            "condition": "corner_block",
+            "condition_value": None,
+            "cell_row": 12,
+            "cell_col": 1,
+            "cost_cell_row": 12,
+            "cost_cell_col": 2,
+            "category_id": hermitage_site_id,
+            "sort_order": 2,
+        },
+        {
+            "brand": "Hermitage Homes",
+            "item_name": "$1,500 Crossover",
+            "cost": Decimal("1500.00"),
+            "condition": "building_crossover",
+            "condition_value": None,
+            "cell_row": 13,
+            "cell_col": 1,
+            "cost_cell_row": 13,
+            "cost_cell_col": 2,
+            "category_id": hermitage_site_id,
+            "sort_order": 3,
+        },
+        # Kingsbridge rules
+        {
+            "brand": "Kingsbridge Homes",
+            "item_name": "$30k Commission",
+            "cost": Decimal("30000.00"),
+            "condition": None,
+            "condition_value": None,
+            "cell_row": 10,
+            "cell_col": 1,
+            "cost_cell_row": 10,
+            "cost_cell_col": 2,
+            "category_id": kingsbridge_commission_id,
+            "sort_order": 0,
+        },
+        {
+            "brand": "Kingsbridge Homes",
+            "item_name": "$2,500 Corner Block",
+            "cost": Decimal("2500.00"),
+            "condition": "corner_block",
+            "condition_value": None,
+            "cell_row": 11,
+            "cell_col": 1,
+            "cost_cell_row": 11,
+            "cost_cell_col": 2,
+            "category_id": kingsbridge_extras_id,
+            "sort_order": 1,
+        },
+        {
+            "brand": "Kingsbridge Homes",
+            "item_name": "$1,500 Crossover",
+            "cost": Decimal("1500.00"),
+            "condition": "building_crossover",
+            "condition_value": None,
+            "cell_row": 12,
+            "cell_col": 1,
+            "cost_cell_row": 12,
+            "cost_cell_col": 2,
+            "category_id": kingsbridge_extras_id,
+            "sort_order": 2,
+        },
+    ]
+
+    for spec in global_rule_specs:
+        existing = db.execute(
+            select(GlobalPricingRule).where(
+                GlobalPricingRule.brand == spec["brand"],
+                GlobalPricingRule.item_name == spec["item_name"],
+            )
+        ).scalar_one_or_none()
+        if existing is None:
+            db.add(GlobalPricingRule(**spec))
+            logger.info(
+                "Seeded global pricing rule: %s (%s)", spec["item_name"], spec["brand"]
+            )
+    db.flush()
+
+    # --- Stage Rules (Cloverton Stage 1) ---
+    cloverton = db.execute(
+        select(Estate).where(Estate.estate_name == "Cloverton")
+    ).scalar_one_or_none()
+    if cloverton is None:
+        return
+    stage1 = db.execute(
+        select(EstateStage).where(
+            EstateStage.estate_id == cloverton.estate_id,
+            EstateStage.name == "Stage 1",
+        )
+    ).scalar_one_or_none()
+    if stage1 is None:
+        return
+
+    stage_rule_specs = [
+        {
+            "estate_id": cloverton.estate_id,
+            "stage_id": stage1.stage_id,
+            "brand": "Hermitage Homes",
+            "item_name": "$500 Stage 1 Promo Discount",
+            "cost": Decimal("-500.00"),
+            "condition": None,
+            "condition_value": None,
+            "cell_row": 20,
+            "cell_col": 1,
+            "cost_cell_row": 20,
+            "cost_cell_col": 2,
+            "category_id": hermitage_commission_id,
+            "sort_order": 0,
+        },
+        {
+            "estate_id": cloverton.estate_id,
+            "stage_id": stage1.stage_id,
+            "brand": "Hermitage Homes",
+            "item_name": "$3,000 KDRB Allowance",
+            "cost": Decimal("3000.00"),
+            "condition": "is_kdrb",
+            "condition_value": None,
+            "cell_row": 21,
+            "cell_col": 1,
+            "cost_cell_row": 21,
+            "cost_cell_col": 2,
+            "category_id": hermitage_site_id,
+            "sort_order": 1,
+        },
+    ]
+
+    for spec in stage_rule_specs:
+        existing = db.execute(
+            select(StagePricingRule).where(
+                StagePricingRule.estate_id == spec["estate_id"],
+                StagePricingRule.stage_id == spec["stage_id"],
+                StagePricingRule.item_name == spec["item_name"],
+            )
+        ).scalar_one_or_none()
+        if existing is None:
+            db.add(StagePricingRule(**spec))
+            logger.info(
+                "Seeded stage pricing rule: %s (estate=%s, stage=%s)",
+                spec["item_name"],
+                spec["estate_id"],
+                spec["stage_id"],
+            )
+    db.flush()
