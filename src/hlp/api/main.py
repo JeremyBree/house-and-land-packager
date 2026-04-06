@@ -24,18 +24,21 @@ from hlp.api.routers import documents as documents_router
 from hlp.api.routers import estates as estates_router
 from hlp.api.routers import files as files_router
 from hlp.api.routers import filter_presets as filter_presets_router
+from hlp.api.routers import house_designs as house_designs_router
 from hlp.api.routers import import_data as import_data_router
 from hlp.api.routers import ingestion_logs as ingestion_logs_router
 from hlp.api.routers import lot_search as lot_search_router
 from hlp.api.routers import lots as lots_router
 from hlp.api.routers import notifications as notifications_router
 from hlp.api.routers import packages as packages_router
+from hlp.api.routers import pricing_engine as pricing_engine_router
 from hlp.api.routers import pricing_requests as pricing_requests_router
 from hlp.api.routers import pricing_rules as pricing_rules_router
 from hlp.api.routers import pricing_templates as pricing_templates_router
 from hlp.api.routers import regions as regions_router
 from hlp.api.routers import stages as stages_router
 from hlp.api.routers import users as users_router
+from hlp.api.routers import wholesale_groups_api as wholesale_groups_router
 from hlp.api.middleware.site_auth import SiteAuthMiddleware, _PASSWORD_PAGE, _hash_password
 from hlp.config import get_settings
 from hlp.database import Base, get_db, get_engine
@@ -297,6 +300,9 @@ def create_app() -> FastAPI:
     application.include_router(dashboard_router.router)
     application.include_router(configurations_router.router)
     application.include_router(ingestion_logs_router.router)
+    application.include_router(house_designs_router.router)
+    application.include_router(pricing_engine_router.router)
+    application.include_router(wholesale_groups_router.router)
     application.include_router(import_data_router.router)
 
     # ---- Site password endpoint ------------------------------------------------
