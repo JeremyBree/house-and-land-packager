@@ -20,6 +20,7 @@ import {
   Briefcase,
   HandCoins,
   KeyRound,
+  FileSpreadsheet,
   Truck,
   Mountain,
   MapPinned,
@@ -65,6 +66,7 @@ const adminNav: NavItem[] = [
   { to: '/admin/upgrades', label: 'Upgrades', icon: ListPlus },
   { to: '/admin/estate-guidelines', label: 'Estate Guidelines', icon: BookOpen },
   { to: '/admin/api-keys', label: 'API Keys', icon: KeyRound },
+  { to: '/admin/import-data', label: 'Import Data', icon: FileSpreadsheet },
   { to: '/admin/configurations', label: 'Configurations', icon: Globe },
   { to: '/admin/ingestion-logs', label: 'Ingestion Logs', icon: ClipboardList },
 ]

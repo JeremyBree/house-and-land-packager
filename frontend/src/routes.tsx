@@ -35,6 +35,7 @@ import UpgradesPage from '@/pages/admin/UpgradesPage'
 import EstateGuidelinesPage from '@/pages/admin/EstateGuidelinesPage'
 import PdfIngestionPage from '@/pages/PdfIngestionPage'
 import ApiKeysPage from '@/pages/admin/ApiKeysPage'
+import ImportDataPage from '@/pages/admin/ImportDataPage'
 
 export function AppRoutes() {
   return (
@@ -90,6 +91,7 @@ export function AppRoutes() {
         <Route path="/admin/upgrades" element={<UpgradesPage />} />
         <Route path="/admin/estate-guidelines" element={<EstateGuidelinesPage />} />
         <Route path="/admin/api-keys" element={<ApiKeysPage />} />
+        <Route path="/admin/import-data" element={<ImportDataPage />} />
       </Route>
 
       <Route path="*" element={<NotFoundPage />} />
