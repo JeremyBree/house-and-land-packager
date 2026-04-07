@@ -10,8 +10,6 @@ import base64
 import json
 import logging
 
-import anthropic
-
 from hlp.config import get_settings
 
 logger = logging.getLogger(__name__)
@@ -83,6 +81,8 @@ def extract_from_pdf(pdf_bytes: bytes) -> dict:
         ValueError: If the API response cannot be parsed as JSON.
         anthropic.APIError: On API communication failures.
     """
+    import anthropic  # lazy import — heavy SDK, only needed at call time
+
     settings = get_settings()
     client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
 
