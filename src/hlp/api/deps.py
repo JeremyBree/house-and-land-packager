@@ -2,14 +2,16 @@
 
 from typing import Annotated
 
-from fastapi import Depends
+from fastapi import Depends, Header
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
 from hlp.database import get_db
+from hlp.models.api_key import ApiKey
 from hlp.models.enums import UserRoleType
 from hlp.models.profile import Profile
 from hlp.repositories import profile_repository
+from hlp.shared.api_key_service import verify_api_key
 from hlp.shared.exceptions import AuthenticationError, NotAuthorizedError
 from hlp.shared.security import decode_token
 
@@ -19,6 +21,7 @@ __all__ = [
     "get_current_user",
     "require_roles",
     "require_admin",
+    "get_api_key_agent",
 ]
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
@@ -54,3 +57,14 @@ def require_roles(*roles: UserRoleType):
 
 
 require_admin = require_roles(UserRoleType.ADMIN)
+
+
+def get_api_key_agent(
+    x_api_key: str = Header(...),
+    db: Session = Depends(get_db),
+) -> ApiKey:
+    """Resolve and validate an API key from the X-API-Key header."""
+    key = verify_api_key(db, x_api_key)
+    if key is None:
+        raise AuthenticationError("Invalid or expired API key")
+    return key

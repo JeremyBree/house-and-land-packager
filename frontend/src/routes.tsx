@@ -24,6 +24,17 @@ import StageRulesPage from '@/pages/admin/StageRulesPage'
 import ConfigurationsPage from '@/pages/admin/ConfigurationsPage'
 import IngestionLogsPage from '@/pages/admin/IngestionLogsPage'
 import PricingConfigPage from '@/pages/admin/PricingConfigPage'
+import HouseDesignsPage from '@/pages/admin/HouseDesignsPage'
+import EnergyRatingsPage from '@/pages/admin/EnergyRatingsPage'
+import CommissionsPage from '@/pages/admin/CommissionsPage'
+import TravelSurchargesPage from '@/pages/admin/TravelSurchargesPage'
+import SiteCostsPage from '@/pages/admin/SiteCostsPage'
+import PostcodeCostsPage from '@/pages/admin/PostcodeCostsPage'
+import FbcBandsPage from '@/pages/admin/FbcBandsPage'
+import UpgradesPage from '@/pages/admin/UpgradesPage'
+import EstateGuidelinesPage from '@/pages/admin/EstateGuidelinesPage'
+import PdfIngestionPage from '@/pages/PdfIngestionPage'
+import ApiKeysPage from '@/pages/admin/ApiKeysPage'
 
 export function AppRoutes() {
   return (
@@ -50,6 +61,7 @@ export function AppRoutes() {
         <Route path="/pricing-requests/:id" element={<PricingRequestDetailPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/lsi" element={<LsiPage />} />
+        <Route path="/pdf-ingestion" element={<PdfIngestionPage />} />
       </Route>
 
       <Route
@@ -68,6 +80,16 @@ export function AppRoutes() {
         <Route path="/admin/configurations" element={<ConfigurationsPage />} />
         <Route path="/admin/ingestion-logs" element={<IngestionLogsPage />} />
         <Route path="/admin/pricing-config" element={<PricingConfigPage />} />
+        <Route path="/admin/house-designs" element={<HouseDesignsPage />} />
+        <Route path="/admin/energy-ratings" element={<EnergyRatingsPage />} />
+        <Route path="/admin/commissions" element={<CommissionsPage />} />
+        <Route path="/admin/travel-surcharges" element={<TravelSurchargesPage />} />
+        <Route path="/admin/site-costs" element={<SiteCostsPage />} />
+        <Route path="/admin/postcode-costs" element={<PostcodeCostsPage />} />
+        <Route path="/admin/fbc-bands" element={<FbcBandsPage />} />
+        <Route path="/admin/upgrades" element={<UpgradesPage />} />
+        <Route path="/admin/estate-guidelines" element={<EstateGuidelinesPage />} />
+        <Route path="/admin/api-keys" element={<ApiKeysPage />} />
       </Route>
 
       <Route path="*" element={<NotFoundPage />} />

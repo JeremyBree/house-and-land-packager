@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -24,6 +24,8 @@ import {
 import { createPackage, updatePackage } from '@/api/packages'
 import { listEstates } from '@/api/estates'
 import { listStages } from '@/api/stages'
+import { listLots } from '@/api/lots'
+import { listHouseDesigns } from '@/api/houseDesigns'
 import type { PackageRead } from '@/api/types'
 import { useToast } from '@/components/ui/toast'
 import { extractErrorMessage } from '@/api/client'
@@ -52,6 +54,7 @@ export function PackageFormDialog({ open, onOpenChange, pkg }: PackageFormDialog
   const queryClient = useQueryClient()
   const { toast } = useToast()
   const isEdit = Boolean(pkg)
+  const [adHocLot, setAdHocLot] = useState(false)
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -69,7 +72,14 @@ export function PackageFormDialog({ open, onOpenChange, pkg }: PackageFormDialog
   })
 
   const watchedEstateId = form.watch('estate_id')
+  const watchedStageId = form.watch('stage_id')
+  const watchedBrand = form.watch('brand')
+  const watchedDesign = form.watch('design')
   const selectedEstateId = watchedEstateId ? Number(watchedEstateId) : undefined
+  const selectedStageId = watchedStageId ? Number(watchedStageId) : undefined
+
+  // Brand name mapping for house design API
+  const brandFullName = watchedBrand === 'Hermitage' ? 'Hermitage Homes' : 'Kingsbridge Homes'
 
   const { data: estatesData } = useQuery({
     queryKey: ['estates', { page: 1, size: 200 }],
@@ -83,8 +93,25 @@ export function PackageFormDialog({ open, onOpenChange, pkg }: PackageFormDialog
     enabled: open && !!selectedEstateId,
   })
 
+  const { data: lotsData } = useQuery({
+    queryKey: ['stage-lots', selectedStageId],
+    queryFn: () => listLots(selectedStageId!, { size: 200 }),
+    enabled: open && !!selectedStageId,
+  })
+
+  const { data: houseDesigns } = useQuery({
+    queryKey: ['house-designs', brandFullName],
+    queryFn: () => listHouseDesigns(brandFullName),
+    enabled: open && !!watchedBrand,
+  })
+
+  // Get facades for the currently selected design
+  const selectedDesignObj = houseDesigns?.find((d) => d.house_name === watchedDesign)
+  const facades = selectedDesignObj?.facades ?? []
+
   useEffect(() => {
     if (open) {
+      setAdHocLot(false)
       form.reset({
         estate_id: pkg ? String(pkg.estate_id) : '',
         stage_id: pkg ? String(pkg.stage_id) : '',
@@ -152,6 +179,7 @@ export function PackageFormDialog({ open, onOpenChange, pkg }: PackageFormDialog
                         onChange={(e) => {
                           field.onChange(e.target.value)
                           form.setValue('stage_id', '')
+                          form.setValue('lot_number', '')
                         }}
                       >
                         <option value="">Select estate</option>
@@ -176,7 +204,10 @@ export function PackageFormDialog({ open, onOpenChange, pkg }: PackageFormDialog
                       <select
                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                         value={field.value}
-                        onChange={(e) => field.onChange(e.target.value)}
+                        onChange={(e) => {
+                          field.onChange(e.target.value)
+                          form.setValue('lot_number', '')
+                        }}
                         disabled={!selectedEstateId}
                       >
                         <option value="">Select stage</option>
@@ -200,8 +231,36 @@ export function PackageFormDialog({ open, onOpenChange, pkg }: PackageFormDialog
                 <FormItem>
                   <FormLabel>Lot number *</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    {adHocLot ? (
+                      <Input {...field} placeholder="Enter lot number..." />
+                    ) : (
+                      <select
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        value={field.value}
+                        onChange={(e) => field.onChange(e.target.value)}
+                        disabled={!selectedStageId}
+                      >
+                        <option value="">Select lot</option>
+                        {lotsData?.items.map((l) => (
+                          <option key={l.lot_id} value={l.lot_number}>
+                            {l.lot_number}{l.street_name ? ` — ${l.street_name}` : ''}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                   </FormControl>
+                  <label className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <input
+                      type="checkbox"
+                      checked={adHocLot}
+                      onChange={(e) => {
+                        setAdHocLot(e.target.checked)
+                        form.setValue('lot_number', '')
+                      }}
+                      className="h-3 w-3 rounded border"
+                    />
+                    Ad hoc lot
+                  </label>
                   <FormMessage />
                 </FormItem>
               )}
@@ -210,33 +269,28 @@ export function PackageFormDialog({ open, onOpenChange, pkg }: PackageFormDialog
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="design"
+                name="brand"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Design *</FormLabel>
+                    <FormLabel>Brand *</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <select
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        value={field.value}
+                        onChange={(e) => {
+                          field.onChange(e.target.value)
+                          form.setValue('design', '')
+                          form.setValue('facade', '')
+                        }}
+                      >
+                        <option value="Hermitage">Hermitage</option>
+                        <option value="Kingsbridge">Kingsbridge</option>
+                      </select>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="facade"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Facade *</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="colour_scheme"
@@ -250,20 +304,56 @@ export function PackageFormDialog({ open, onOpenChange, pkg }: PackageFormDialog
                   </FormItem>
                 )}
               />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="brand"
+                name="design"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Brand *</FormLabel>
+                    <FormLabel>Design *</FormLabel>
+                    <FormControl>
+                      <select
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        value={field.value}
+                        onChange={(e) => {
+                          field.onChange(e.target.value)
+                          form.setValue('facade', '')
+                        }}
+                        disabled={!watchedBrand}
+                      >
+                        <option value="">Select design</option>
+                        {houseDesigns?.filter((d) => d.active).map((d) => (
+                          <option key={d.design_id} value={d.house_name}>
+                            {d.house_name}
+                          </option>
+                        ))}
+                      </select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="facade"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Facade *</FormLabel>
                     <FormControl>
                       <select
                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                         value={field.value}
                         onChange={(e) => field.onChange(e.target.value)}
+                        disabled={!watchedDesign}
                       >
-                        <option value="Hermitage">Hermitage</option>
-                        <option value="Kingsbridge">Kingsbridge</option>
+                        <option value="">Select facade</option>
+                        {facades.map((f) => (
+                          <option key={f.facade_id} value={f.facade_name}>
+                            {f.facade_name}
+                          </option>
+                        ))}
                       </select>
                     </FormControl>
                     <FormMessage />

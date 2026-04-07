@@ -151,8 +151,16 @@ export default function PackagesPage() {
         header: 'Lot #',
         cell: ({ row }) => <span className="font-medium">{row.original.lot_number}</span>,
       },
-      { accessorKey: 'estate_id', header: 'Estate' },
-      { accessorKey: 'stage_id', header: 'Stage' },
+      {
+        accessorKey: 'estate_name',
+        header: 'Estate',
+        cell: ({ row }) => row.original.estate_name ?? row.original.estate_id,
+      },
+      {
+        accessorKey: 'stage_name',
+        header: 'Stage',
+        cell: ({ row }) => row.original.stage_name ?? row.original.stage_id,
+      },
       { accessorKey: 'design', header: 'Design' },
       { accessorKey: 'facade', header: 'Facade' },
       {

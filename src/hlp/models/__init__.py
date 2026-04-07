@@ -1,5 +1,6 @@
 """SQLAlchemy ORM models — import all so Base.metadata discovers them."""
 
+from hlp.models.api_key import ApiKey
 from hlp.models.clash_rule import ClashRule
 from hlp.models.commission_rate import CommissionRate
 from hlp.models.configuration import Configuration
@@ -15,6 +16,7 @@ from hlp.models.house_design import HouseDesign, HouseFacade
 from hlp.models.house_package import HousePackage
 from hlp.models.ingestion_log import IngestionLog
 from hlp.models.notification import Notification
+from hlp.models.pending_extraction import PendingExtraction
 from hlp.models.postcode_site_cost import PostcodeSiteCost
 from hlp.models.pricing_config import PricingConfig
 from hlp.models.pricing_request import PricingRequest
@@ -32,6 +34,7 @@ from hlp.models.user_role import UserRole
 from hlp.models.wholesale_group import WholesaleGroup
 
 __all__ = [
+    "ApiKey",
     "ClashRule",
     "CommissionRate",
     "Configuration",
@@ -50,6 +53,7 @@ __all__ = [
     "HousePackage",
     "IngestionLog",
     "Notification",
+    "PendingExtraction",
     "PostcodeSiteCost",
     "PricingConfig",
     "PricingRequest",

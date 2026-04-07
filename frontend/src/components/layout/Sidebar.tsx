@@ -6,8 +6,11 @@ import {
   ClipboardList,
   DollarSign,
   FileText,
+  FileUp,
   Globe,
+  Home,
   LayoutDashboard,
+  Zap,
   MapPin,
   Package,
   Search,
@@ -15,6 +18,14 @@ import {
   SlidersHorizontal,
   Users,
   Briefcase,
+  HandCoins,
+  KeyRound,
+  Truck,
+  Mountain,
+  MapPinned,
+  TrendingUp,
+  BookOpen,
+  ListPlus,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
@@ -34,15 +45,26 @@ const mainNav: NavItem[] = [
   { to: '/conflicts', label: 'Conflicts', icon: AlertTriangle },
   { to: '/pricing-requests', label: 'Pricing Requests', icon: FileText },
   { to: '/lsi', label: 'Land Search', icon: Search },
+  { to: '/pdf-ingestion', label: 'PDF Ingestion', icon: FileUp },
 ]
 
 const adminNav: NavItem[] = [
   { to: '/admin/users', label: 'Users', icon: Users },
   { to: '/admin/regions', label: 'Regions', icon: MapPin },
   { to: '/admin/developers', label: 'Developers', icon: Briefcase },
+  { to: '/admin/house-designs', label: 'House Designs', icon: Home },
+  { to: '/admin/energy-ratings', label: 'Energy Ratings', icon: Zap },
+  { to: '/admin/commissions', label: 'Commissions', icon: HandCoins },
   { to: '/admin/pricing-templates', label: 'Pricing Templates', icon: SlidersHorizontal },
   { to: '/admin/pricing-rules', label: 'Pricing Rules', icon: Calculator },
   { to: '/admin/pricing-config', label: 'Pricing Config', icon: DollarSign },
+  { to: '/admin/travel-surcharges', label: 'Travel Surcharges', icon: Truck },
+  { to: '/admin/site-costs', label: 'Site Costs', icon: Mountain },
+  { to: '/admin/postcode-costs', label: 'Postcode Costs', icon: MapPinned },
+  { to: '/admin/fbc-bands', label: 'FBC Bands', icon: TrendingUp },
+  { to: '/admin/upgrades', label: 'Upgrades', icon: ListPlus },
+  { to: '/admin/estate-guidelines', label: 'Estate Guidelines', icon: BookOpen },
+  { to: '/admin/api-keys', label: 'API Keys', icon: KeyRound },
   { to: '/admin/configurations', label: 'Configurations', icon: Globe },
   { to: '/admin/ingestion-logs', label: 'Ingestion Logs', icon: ClipboardList },
 ]

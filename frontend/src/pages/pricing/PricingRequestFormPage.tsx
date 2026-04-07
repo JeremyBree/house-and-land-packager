@@ -15,18 +15,25 @@ import {
 } from '@/api/pricingRequests'
 import { listEstates } from '@/api/estates'
 import { listStages } from '@/api/stages'
+import { listLots } from '@/api/lots'
+import { listHouseDesigns } from '@/api/houseDesigns'
 import { useToast } from '@/components/ui/toast'
 import { extractErrorMessage } from '@/api/client'
 import axios from 'axios'
 
 const BRANDS = ['Hermitage Homes', 'Kingsbridge Homes'] as const
 
-const emptyLot = (): LotEntry => ({
+interface LotEntryForm extends LotEntry {
+  ad_hoc_lot: boolean
+}
+
+const emptyLot = (): LotEntryForm => ({
   lot_number: '',
   house_type: '',
   facade_type: '',
   garage_side: null,
   custom_house_design: false,
+  ad_hoc_lot: false,
 })
 
 export default function PricingRequestFormPage() {
@@ -52,7 +59,7 @@ export default function PricingRequestFormPage() {
   const [rearEasement, setRearEasement] = useState('')
   const [bdm, setBdm] = useState('')
   const [wholesaleGroup, setWholesaleGroup] = useState('')
-  const [lots, setLots] = useState<LotEntry[]>([emptyLot()])
+  const [lots, setLots] = useState<LotEntryForm[]>([emptyLot()])
   const [notes, setNotes] = useState('')
   const [clashErrors, setClashErrors] = useState<ClashViolationResponse | null>(null)
 
@@ -66,6 +73,21 @@ export default function PricingRequestFormPage() {
     queryKey: ['stages', selectedEstateId],
     queryFn: () => listStages(selectedEstateId!),
     enabled: !!selectedEstateId,
+  })
+
+  // Fetch available lots for the selected stage
+  const { data: lotsData } = useQuery({
+    queryKey: ['stage-lots', stageId],
+    queryFn: () => listLots(stageId as number, { size: 200 }),
+    enabled: !!stageId,
+  })
+  const availableLots = lotsData?.items ?? []
+
+  // Fetch house designs for the selected brand
+  const { data: houseDesigns } = useQuery({
+    queryKey: ['house-designs', brand],
+    queryFn: () => listHouseDesigns(brand),
+    enabled: !!brand,
   })
 
   const isHermitage = brand === 'Hermitage Homes'
@@ -94,15 +116,29 @@ export default function PricingRequestFormPage() {
     if (lots.length <= 1) return
     setLots(lots.filter((_, i) => i !== idx))
   }
-  const updateLot = (idx: number, field: keyof LotEntry, value: string | boolean | null) => {
+  const updateLot = (idx: number, field: keyof LotEntryForm, value: string | boolean | null) => {
     const updated = [...lots]
     updated[idx] = { ...updated[idx], [field]: value }
+    // Reset facade when house type changes
+    if (field === 'house_type') {
+      updated[idx].facade_type = ''
+    }
     setLots(updated)
+  }
+
+  // Get facades for a specific lot entry's selected house design
+  const getFacadesForLot = (lot: LotEntryForm) => {
+    if (!lot.house_type || !houseDesigns) return []
+    const design = houseDesigns.find((d) => d.house_name === lot.house_type)
+    return design?.facades ?? []
   }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setClashErrors(null)
+
+    // Strip the ad_hoc_lot field before sending
+    const cleanLots: LotEntry[] = lots.map(({ ad_hoc_lot: _, ...rest }) => rest)
 
     const payload: PricingRequestCreateInput = {
       estate_id: estateId as number,
@@ -119,7 +155,7 @@ export default function PricingRequestFormPage() {
       rear_easement: rearEasement || null,
       bdm: isHermitage ? bdm : null,
       wholesale_group: isHermitage ? wholesaleGroup : null,
-      lots,
+      lots: cleanLots,
       notes: notes || null,
     }
 
@@ -161,7 +197,7 @@ export default function PricingRequestFormPage() {
               <select
                 className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
                 value={estateId}
-                onChange={(e) => { setEstateId(e.target.value ? Number(e.target.value) : ''); setStageId('') }}
+                onChange={(e) => { setEstateId(e.target.value ? Number(e.target.value) : ''); setStageId(''); setLots([emptyLot()]) }}
                 required
               >
                 <option value="">Select estate...</option>
@@ -175,7 +211,7 @@ export default function PricingRequestFormPage() {
               <select
                 className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
                 value={stageId}
-                onChange={(e) => setStageId(e.target.value ? Number(e.target.value) : '')}
+                onChange={(e) => { setStageId(e.target.value ? Number(e.target.value) : ''); setLots([emptyLot()]) }}
                 required
                 disabled={!estateId}
               >
@@ -190,7 +226,11 @@ export default function PricingRequestFormPage() {
               <select
                 className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
                 value={brand}
-                onChange={(e) => setBrand(e.target.value)}
+                onChange={(e) => {
+                  setBrand(e.target.value)
+                  // Reset house/facade selections when brand changes
+                  setLots(lots.map((l) => ({ ...l, house_type: '', facade_type: '' })))
+                }}
                 required
               >
                 <option value="">Select brand...</option>
@@ -279,57 +319,127 @@ export default function PricingRequestFormPage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            {lots.map((lot, idx) => (
-              <div key={idx} className="rounded-lg border p-4">
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="text-sm font-medium">Lot {idx + 1}</span>
-                  {lots.length > 1 && (
-                    <Button type="button" variant="ghost" size="sm" onClick={() => removeLot(idx)}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  )}
-                </div>
-                <div className="grid gap-3 md:grid-cols-4">
-                  <div>
-                    <Label>Lot Number *</Label>
-                    <Input value={lot.lot_number} onChange={(e) => updateLot(idx, 'lot_number', e.target.value)} required />
+            {lots.map((lot, idx) => {
+              const facades = getFacadesForLot(lot)
+              return (
+                <div key={idx} className="rounded-lg border p-4">
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-sm font-medium">Lot {idx + 1}</span>
+                    {lots.length > 1 && (
+                      <Button type="button" variant="ghost" size="sm" onClick={() => removeLot(idx)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    )}
                   </div>
-                  <div>
-                    <Label>House Type *</Label>
-                    <Input value={lot.house_type} onChange={(e) => updateLot(idx, 'house_type', e.target.value)} required />
-                  </div>
-                  <div>
-                    <Label>Facade Type *</Label>
-                    <Input value={lot.facade_type} onChange={(e) => updateLot(idx, 'facade_type', e.target.value)} required />
-                  </div>
-                  {isHermitage && (
+                  <div className="grid gap-3 md:grid-cols-4">
+                    {/* Lot Number - dropdown or ad-hoc */}
                     <div>
-                      <Label>Garage Side</Label>
+                      <Label>Lot Number *</Label>
+                      {lot.ad_hoc_lot ? (
+                        <Input
+                          value={lot.lot_number}
+                          onChange={(e) => updateLot(idx, 'lot_number', e.target.value)}
+                          placeholder="Enter lot number..."
+                          required
+                        />
+                      ) : (
+                        <select
+                          className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+                          value={lot.lot_number}
+                          onChange={(e) => updateLot(idx, 'lot_number', e.target.value)}
+                          required
+                          disabled={!stageId}
+                        >
+                          <option value="">Select lot...</option>
+                          {availableLots.map((l) => (
+                            <option key={l.lot_id} value={l.lot_number}>
+                              {l.lot_number}{l.street_name ? ` — ${l.street_name}` : ''}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                      <label className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <input
+                          type="checkbox"
+                          checked={lot.ad_hoc_lot}
+                          onChange={(e) => {
+                            updateLot(idx, 'ad_hoc_lot', e.target.checked)
+                            if (e.target.checked) updateLot(idx, 'lot_number', '')
+                            else updateLot(idx, 'lot_number', '')
+                          }}
+                          className="h-3 w-3 rounded border"
+                        />
+                        Ad hoc lot
+                      </label>
+                    </div>
+
+                    {/* House Type - dropdown from house catalog */}
+                    <div>
+                      <Label>House Type *</Label>
                       <select
                         className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
-                        value={lot.garage_side ?? ''}
-                        onChange={(e) => updateLot(idx, 'garage_side', e.target.value || null)}
+                        value={lot.house_type}
+                        onChange={(e) => updateLot(idx, 'house_type', e.target.value)}
+                        required
+                        disabled={!brand}
                       >
-                        <option value="">-</option>
-                        <option value="Left">Left</option>
-                        <option value="Right">Right</option>
+                        <option value="">Select house...</option>
+                        {houseDesigns?.filter((d) => d.active).map((d) => (
+                          <option key={d.design_id} value={d.house_name}>
+                            {d.house_name}
+                          </option>
+                        ))}
                       </select>
                     </div>
-                  )}
-                  {isKingsbridge && (
-                    <label className="flex items-end gap-2 pb-2 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={!!lot.custom_house_design}
-                        onChange={(e) => updateLot(idx, 'custom_house_design', e.target.checked)}
-                        className="h-4 w-4 rounded border"
-                      />
-                      Custom Design
-                    </label>
-                  )}
+
+                    {/* Facade Type - dropdown filtered by selected house */}
+                    <div>
+                      <Label>Facade Type *</Label>
+                      <select
+                        className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+                        value={lot.facade_type}
+                        onChange={(e) => updateLot(idx, 'facade_type', e.target.value)}
+                        required
+                        disabled={!lot.house_type}
+                      >
+                        <option value="">Select facade...</option>
+                        {facades.map((f) => (
+                          <option key={f.facade_id} value={f.facade_name}>
+                            {f.facade_name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {isHermitage && (
+                      <div>
+                        <Label>Garage Side</Label>
+                        <select
+                          className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+                          value={lot.garage_side ?? ''}
+                          onChange={(e) => updateLot(idx, 'garage_side', e.target.value || null)}
+                        >
+                          <option value="">-</option>
+                          <option value="Left">Left</option>
+                          <option value="Right">Right</option>
+                        </select>
+                      </div>
+                    )}
+                    {isKingsbridge && (
+                      <label className="flex items-end gap-2 pb-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={!!lot.custom_house_design}
+                          onChange={(e) => updateLot(idx, 'custom_house_design', e.target.checked)}
+                          className="h-4 w-4 rounded border"
+                        />
+                        Custom Design
+                      </label>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </CardContent>
         </Card>
 

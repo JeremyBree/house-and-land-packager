@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { z } from 'zod'
 import { X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import {
   Dialog,
   DialogContent,
@@ -23,6 +22,7 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { createClashRule, updateClashRule } from '@/api/clashRules'
+import { listLots } from '@/api/lots'
 import type { ClashRuleRead } from '@/api/types'
 import { useToast } from '@/components/ui/toast'
 import { extractErrorMessage } from '@/api/client'
@@ -53,29 +53,39 @@ export function ClashRuleFormDialog({
   const isEdit = Boolean(rule)
 
   const [cannotMatch, setCannotMatch] = useState<string[]>([])
-  const [newLot, setNewLot] = useState('')
+  const [selectedAddLot, setSelectedAddLot] = useState('')
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: { lot_number: '' },
   })
 
+  const { data: lotsData } = useQuery({
+    queryKey: ['stage-lots', stageId],
+    queryFn: () => listLots(stageId, { size: 200 }),
+    enabled: open && !!stageId,
+  })
+  const availableLots = lotsData?.items ?? []
+
+  const watchedLotNumber = form.watch('lot_number')
+
+  // Lots available for "cannot match" (excluding the primary lot and already-added lots)
+  const cannotMatchOptions = availableLots.filter(
+    (l) => l.lot_number !== watchedLotNumber && !cannotMatch.includes(l.lot_number),
+  )
+
   useEffect(() => {
     if (open) {
       form.reset({ lot_number: rule?.lot_number ?? '' })
       setCannotMatch(rule?.cannot_match ?? [])
-      setNewLot('')
+      setSelectedAddLot('')
     }
   }, [open, rule, form])
 
-  function addLots() {
-    const lots = newLot
-      .split(',')
-      .map((l) => l.trim())
-      .filter((l) => l && !cannotMatch.includes(l))
-    if (lots.length > 0) {
-      setCannotMatch((prev) => [...prev, ...lots])
-      setNewLot('')
+  function addLot() {
+    if (selectedAddLot && !cannotMatch.includes(selectedAddLot)) {
+      setCannotMatch((prev) => [...prev, selectedAddLot])
+      setSelectedAddLot('')
     }
   }
 
@@ -129,7 +139,22 @@ export function ClashRuleFormDialog({
                 <FormItem>
                   <FormLabel>Lot number *</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="e.g. 101" />
+                    <select
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      value={field.value}
+                      onChange={(e) => {
+                        field.onChange(e.target.value)
+                        // Remove the newly selected lot from cannot_match if present
+                        setCannotMatch((prev) => prev.filter((l) => l !== e.target.value))
+                      }}
+                    >
+                      <option value="">Select lot...</option>
+                      {availableLots.map((l) => (
+                        <option key={l.lot_id} value={l.lot_number}>
+                          {l.lot_number}{l.street_name ? ` — ${l.street_name}` : ''}
+                        </option>
+                      ))}
+                    </select>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -161,18 +186,26 @@ export function ClashRuleFormDialog({
                 )}
               </div>
               <div className="flex items-center gap-2">
-                <Input
-                  placeholder="Lot numbers (comma-separated)"
-                  value={newLot}
-                  onChange={(e) => setNewLot(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault()
-                      addLots()
-                    }
-                  }}
-                />
-                <Button type="button" variant="outline" size="sm" onClick={addLots}>
+                <select
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={selectedAddLot}
+                  onChange={(e) => setSelectedAddLot(e.target.value)}
+                  disabled={!watchedLotNumber}
+                >
+                  <option value="">Select lot to add...</option>
+                  {cannotMatchOptions.map((l) => (
+                    <option key={l.lot_id} value={l.lot_number}>
+                      {l.lot_number}{l.street_name ? ` — ${l.street_name}` : ''}
+                    </option>
+                  ))}
+                </select>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addLot}
+                  disabled={!selectedAddLot}
+                >
                   Add
                 </Button>
               </div>

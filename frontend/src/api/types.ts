@@ -329,6 +329,9 @@ export interface PackageRead {
   flyer_path: string | null
   created_at: string
   updated_at: string
+  estate_name: string | null
+  stage_name: string | null
+  lot_id: number | null
 }
 
 export interface PackageInput {

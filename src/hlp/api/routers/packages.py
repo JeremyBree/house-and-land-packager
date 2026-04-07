@@ -35,7 +35,7 @@ router = APIRouter(prefix="/api/packages", tags=["packages"])
 
 @router.get(
     "",
-    response_model=PaginatedResponse[PackageRead],
+    response_model=PaginatedResponse[PackageDetailRead],
     dependencies=[Depends(get_current_user)],
 )
 def list_packages(
@@ -48,7 +48,7 @@ def list_packages(
     lot_number: str | None = None,
     page: int = Query(1, ge=1),
     size: int = Query(25, ge=1, le=200),
-) -> PaginatedResponse[PackageRead]:
+) -> PaginatedResponse[PackageDetailRead]:
     filters = {
         "estate_id": estate_id,
         "stage_id": stage_id,
@@ -59,8 +59,34 @@ def list_packages(
     }
     items, total = house_package_repository.list_filtered(db, filters, page, size)
     pages = math.ceil(total / size) if size else 0
-    return PaginatedResponse[PackageRead](
-        items=[PackageRead.model_validate(p) for p in items],
+
+    # Build lookup maps for estate/stage names
+    estate_ids = {p.estate_id for p in items}
+    stage_ids = {p.stage_id for p in items}
+    estate_map: dict[int, str] = {}
+    stage_map: dict[int, str] = {}
+    for eid in estate_ids:
+        estate = db.get(Estate, eid)
+        if estate:
+            estate_map[eid] = estate.estate_name
+    for sid in stage_ids:
+        stage = db.get(EstateStage, sid)
+        if stage:
+            stage_map[sid] = stage.name
+
+    enriched = []
+    for p in items:
+        base = PackageRead.model_validate(p).model_dump()
+        enriched.append(
+            PackageDetailRead(
+                **base,
+                estate_name=estate_map.get(p.estate_id),
+                stage_name=stage_map.get(p.stage_id),
+            )
+        )
+
+    return PaginatedResponse[PackageDetailRead](
+        items=enriched,
         total=total,
         page=page,
         size=size,
