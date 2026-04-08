@@ -2,7 +2,7 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, File, Query, UploadFile, status
 from sqlalchemy.orm import Session
 
 from hlp.api.deps import get_current_user, get_db, require_admin
@@ -14,7 +14,9 @@ from hlp.api.schemas.guideline_schema import (
     GuidelineTypeRead,
     GuidelineTypeUpdate,
 )
+from hlp.api.schemas.common import CsvRowError, CsvUploadResult
 from hlp.repositories import guideline_repository
+from hlp.shared import csv_import_service
 from hlp.shared.exceptions import NotFoundError
 
 router = APIRouter(prefix="/api/guidelines", tags=["guidelines"])
@@ -150,3 +152,38 @@ def delete_estate_guideline(
         raise NotFoundError(f"EstateDesignGuideline {guideline_id} not found")
     guideline_repository.delete_estate_guideline(db, guideline_id)
     db.commit()
+
+
+# ---- CSV Uploads -------------------------------------------------------------
+
+
+@router.post(
+    "/types/upload-csv",
+    response_model=CsvUploadResult,
+    dependencies=[Depends(require_admin)],
+)
+async def upload_guideline_types_csv(
+    db: Annotated[Session, Depends(get_db)],
+    file: UploadFile = File(...),
+) -> CsvUploadResult:
+    content = await file.read()
+    parsed = csv_import_service.parse_guideline_types_csv(content)
+    created, skipped, errors = csv_import_service.bulk_create_guideline_types(db, parsed)
+    db.commit()
+    return CsvUploadResult(created=created, skipped=skipped, errors=[CsvRowError(**e) for e in errors])
+
+
+@router.post(
+    "/estate/upload-csv",
+    response_model=CsvUploadResult,
+    dependencies=[Depends(require_admin)],
+)
+async def upload_estate_guidelines_csv(
+    db: Annotated[Session, Depends(get_db)],
+    file: UploadFile = File(...),
+) -> CsvUploadResult:
+    content = await file.read()
+    parsed = csv_import_service.parse_estate_guidelines_csv(content)
+    created, skipped, errors = csv_import_service.bulk_create_estate_guidelines(db, parsed)
+    db.commit()
+    return CsvUploadResult(created=created, skipped=skipped, errors=[CsvRowError(**e) for e in errors])

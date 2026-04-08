@@ -38,6 +38,7 @@ import {
 } from '@/components/ui/table'
 import { PageHeader } from '@/components/common/PageHeader'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
+import { CsvImportButton } from '@/components/common/CsvImportButton'
 import { useToast } from '@/components/ui/toast'
 import { extractErrorMessage } from '@/api/client'
 import {
@@ -250,9 +251,14 @@ export default function HouseDesignsPage() {
         title="House Designs"
         description="Manage house design catalog and facades."
         actions={
-          <Button onClick={openNewDesign}>
-            <Plus className="h-4 w-4" /> New Design
-          </Button>
+          <div className="flex gap-2">
+            <CsvImportButton endpoint="/api/house-designs/upload-csv" label="Import Designs" onSuccess={() => queryClient.invalidateQueries({ queryKey: ['house-designs'] })} />
+            <CsvImportButton endpoint="/api/house-designs/facades/upload-csv" label="Import Facades" onSuccess={() => queryClient.invalidateQueries({ queryKey: ['house-designs'] })} />
+            <CsvImportButton endpoint="/api/house-designs/energy-ratings/upload-csv" label="Import Energy Ratings" onSuccess={() => queryClient.invalidateQueries({ queryKey: ['house-designs'] })} />
+            <Button onClick={openNewDesign}>
+              <Plus className="h-4 w-4" /> New Design
+            </Button>
+          </div>
         }
       />
 

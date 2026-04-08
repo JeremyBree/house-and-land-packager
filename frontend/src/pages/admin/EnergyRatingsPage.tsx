@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/table'
 import { PageHeader } from '@/components/common/PageHeader'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
+import { CsvImportButton } from '@/components/common/CsvImportButton'
 import { useToast } from '@/components/ui/toast'
 import { extractErrorMessage } from '@/api/client'
 import {
@@ -124,11 +125,14 @@ export default function EnergyRatingsPage() {
         title="Energy Ratings"
         description="Manage energy compliance cost matrix per house design."
         actions={
-          selectedDesignId ? (
-            <Button onClick={() => { setEditing(null); setFormOpen(true) }}>
-              <Plus className="h-4 w-4" /> New Rating
-            </Button>
-          ) : undefined
+          <div className="flex gap-2">
+            <CsvImportButton endpoint="/api/house-designs/energy-ratings/upload-csv" onSuccess={() => queryClient.invalidateQueries({ queryKey: ['energy-ratings'] })} />
+            {selectedDesignId ? (
+              <Button onClick={() => { setEditing(null); setFormOpen(true) }}>
+                <Plus className="h-4 w-4" /> New Rating
+              </Button>
+            ) : null}
+          </div>
         }
       />
 

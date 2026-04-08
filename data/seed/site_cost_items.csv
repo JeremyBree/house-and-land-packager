@@ -1,0 +1,35 @@
+tier_name,item_name,condition_type,condition_description,cost_single_lt190,cost_double_lt190,cost_single_191_249,cost_double_191_249,cost_single_250_300,cost_double_250_300,cost_single_300plus,cost_double_300plus,sort_order
+,H2 waffle foundation,basic,Provide H2 class waffle foundation system ilo M class inc re-bar,0,0,0,0,0,0,0,0,18
+,Minimum piering,basic,Provide Piering to Dwelling (Minimum Charge),1659,1659,1659,1659,1659,1659,1659,1659,19
+,Soil removal & fill import,basic,Soil Removal & Fill Import - Up to 1m of fall over lot,0,0,0,0,0,0,0,0,20
+,Front retaining walls,basic,Front retaining walls? Franna cranes,,,,,,,,,80
+,Second soil test & re-estab survey,basic,Provide Second Soil Test & Re-estab Survey,1915,1915,1915,1915,1915,1915,1915,1915,81
+,Manual handling - restricted site,basic,Provide manual handling due to restricted site & Local Gov/OHS - Asset/Silt Protect,2535,2535,2535,2535,2535,2535,2535,2535,82
+,Services & connections under 650m2,basic,Services & Connections under 650m2.,1700,1700,1700,1700,1700,1700,1700,1700,83
+0-1000mm,"Refer to Item 11.""Total Fall over Site"" - If fall is under 0.30m select Quantity = 0. If fall is over 0.30m select Quantity = 1",tiered,,1761,1761,1761,1761,2054,1954,2800,2000,87
+0-1000mm,Fully piered home (Fill/Trees),tiered,,3276,1814,3776,3110,5443,4665,6000,5000,88
+0-1000mm,If house is sited within 2m of easement select Quantity = 1,tiered,,3000,3000,3000,3000,3000,3000,3000,3000,89
+0-1000mm,LHS Retaining,tiered,,3500,2750,3700,3200,4000,3250,5500,4000,90
+0-1000mm,RHS Retaining,tiered,,3500,2750,3700,3200,4000,3250,5500,4000,91
+0-1000mm,"Refer to Item 5. ""Rear Setback"" - If lot is greater than 650m2 select Quantity = 1",tiered,,,,,,,,,,92
+0-1000mm,460mm slab,tiered,,0,0,0,0,0,0,0,0,93
+0-1000mm,Unbalanced Cut/Fill due to GWH,tiered,,1118,1118,1376,1275,2419,2219,2780,2510,94
+1001-1500mm,Excavation,tiered,,,,,,,,,,99
+1001-1500mm,"Always selectable, please select Quantity = 1",tiered,,2452,2452,2452,2452,2568,2368,2800,2500,100
+1001-1500mm,Fully piered home (Fill/Trees),tiered,,4227,2217,4527,3801,6650,5702,6800,6000,101
+1001-1500mm,If house is sited within 2m of easement select Quantity = 1,tiered,,3000,3000,3000,3000,3000,3000,3000,3000,102
+1001-1500mm,LHS Retaining,tiered,,5250,4000,6000,5250,7000,5750,8000,6500,103
+1001-1500mm,RHS Retaining,tiered,,5250,4000,6000,5250,7000,5750,8000,6500,104
+1001-1500mm,"Refer to Item 5. ""Rear Setback"" - If lot is greater than 650m2 select Quantity = 1",tiered,,,,,,,,,,105
+1001-1500mm,460mm slab,tiered,,0,0,0,0,0,0,0,0,106
+1001-1500mm,Unbalanced Cut/Fill due to GWH,tiered,,2063,1575,2376,2075,2892,2792,3340,3110,107
+1501-2000mm,Excavation,tiered,,8500,7500,9000,7500,10800,9000,12900,10500,112
+1501-2000mm,"Always selectable, please select Quantity = 1",tiered,,3042,2664,3042,2664,3313,2913,3500,3300,113
+1501-2000mm,Fully piered home (Fill/Trees),tiered,,4894,3024,5394,4884,8072,6276,8500,7800,114
+1501-2000mm,If the house is sited within 2m of easement select Quantity = 1,tiered,,4000,4000,4000,4000,4000,4000,4000,4000,115
+1501-2000mm,LHS Retaining,tiered,,8250,6250,7500,6000,10000,8000,12000,10000,116
+1501-2000mm,RHS Retaining,tiered,,8250,6250,7500,6000,10000,8000,12000,10000,117
+1501-2000mm,"Refer to Item 5. ""Rear Setback"" - If lot is greater than 650m2 select Quantity = 1",tiered,,,,,,,,,,118
+1501-2000mm,460mm slab,tiered,,0,0,0,0,0,0,0,0,119
+1501-2000mm,Unbalanced cut/fill due to GWH,tiered,,3036,2750,3395,3064,3516,3026,3810,3340,120
+1501-2000mm,Unbalanced Cut/Fill due to Driveway Grad,tiered,,3036,2750,3395,3064,3516,3026,3810,3340,121

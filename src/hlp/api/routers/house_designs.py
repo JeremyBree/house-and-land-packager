@@ -2,7 +2,7 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, File, Query, UploadFile, status
 from sqlalchemy.orm import Session
 
 from hlp.api.deps import get_current_user, get_db, require_admin
@@ -18,7 +18,9 @@ from hlp.api.schemas.house_design_schema import (
     HouseFacadeRead,
     HouseFacadeUpdate,
 )
+from hlp.api.schemas.common import CsvRowError, CsvUploadResult
 from hlp.repositories import house_design_repository
+from hlp.shared import csv_import_service
 from hlp.shared.exceptions import NotFoundError
 
 router = APIRouter(prefix="/api/house-designs", tags=["house-designs"])
@@ -231,3 +233,54 @@ def delete_energy_rating(
 ) -> None:
     house_design_repository.delete_energy_rating(db, rating_id)
     db.commit()
+
+
+# ---- CSV Uploads ----
+
+
+@router.post(
+    "/upload-csv",
+    response_model=CsvUploadResult,
+    dependencies=[Depends(require_admin)],
+)
+async def upload_designs_csv(
+    db: Annotated[Session, Depends(get_db)],
+    file: UploadFile = File(...),
+) -> CsvUploadResult:
+    content = await file.read()
+    parsed = csv_import_service.parse_house_designs_csv(content)
+    created, skipped, errors = csv_import_service.bulk_create_house_designs(db, parsed)
+    db.commit()
+    return CsvUploadResult(created=created, skipped=skipped, errors=[CsvRowError(**e) for e in errors])
+
+
+@router.post(
+    "/facades/upload-csv",
+    response_model=CsvUploadResult,
+    dependencies=[Depends(require_admin)],
+)
+async def upload_facades_csv(
+    db: Annotated[Session, Depends(get_db)],
+    file: UploadFile = File(...),
+) -> CsvUploadResult:
+    content = await file.read()
+    parsed = csv_import_service.parse_house_facades_csv(content)
+    created, skipped, errors = csv_import_service.bulk_create_house_facades(db, parsed)
+    db.commit()
+    return CsvUploadResult(created=created, skipped=skipped, errors=[CsvRowError(**e) for e in errors])
+
+
+@router.post(
+    "/energy-ratings/upload-csv",
+    response_model=CsvUploadResult,
+    dependencies=[Depends(require_admin)],
+)
+async def upload_energy_ratings_csv(
+    db: Annotated[Session, Depends(get_db)],
+    file: UploadFile = File(...),
+) -> CsvUploadResult:
+    content = await file.read()
+    parsed = csv_import_service.parse_energy_ratings_csv(content)
+    created, skipped, errors = csv_import_service.bulk_create_energy_ratings(db, parsed)
+    db.commit()
+    return CsvUploadResult(created=created, skipped=skipped, errors=[CsvRowError(**e) for e in errors])

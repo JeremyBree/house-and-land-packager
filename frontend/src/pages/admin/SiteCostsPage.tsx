@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { PageHeader } from '@/components/common/PageHeader'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
+import { CsvImportButton } from '@/components/common/CsvImportButton'
 import {
   listSiteCostTiers,
   createSiteCostTier,
@@ -177,6 +178,12 @@ export default function SiteCostsPage() {
       <PageHeader
         title="Site Costs"
         description="Manage site cost tiers and line items with width-based pricing."
+        actions={
+          <div className="flex gap-2">
+            <CsvImportButton endpoint="/api/pricing-reference/site-cost-tiers/upload-csv" label="Import Tiers" onSuccess={() => queryClient.invalidateQueries({ queryKey: ['site-cost-tiers'] })} />
+            <CsvImportButton endpoint="/api/pricing-reference/site-cost-items/upload-csv" label="Import Items" onSuccess={() => queryClient.invalidateQueries({ queryKey: ['site-cost-items'] })} />
+          </div>
+        }
       />
 
       {/* ── Tiers section ──────────────────────────────────────── */}

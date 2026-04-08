@@ -2,7 +2,7 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy.orm import Session
 
 from hlp.api.deps import get_current_user, get_db, require_admin
@@ -16,7 +16,9 @@ from hlp.api.schemas.commission_rate_schema import (
     CommissionRateRead,
     CommissionRateUpdate,
 )
+from hlp.api.schemas.common import CsvRowError, CsvUploadResult
 from hlp.repositories import commission_repository
+from hlp.shared import csv_import_service
 
 router = APIRouter(tags=["wholesale-groups"])
 
@@ -169,3 +171,40 @@ def delete_commission_rate(
     if not ok:
         raise HTTPException(status_code=404, detail="Commission rate not found")
     db.commit()
+
+
+# ---------------------------------------------------------------------------
+# CSV Uploads
+# ---------------------------------------------------------------------------
+
+
+@router.post(
+    wg_prefix + "/upload-csv",
+    response_model=CsvUploadResult,
+    dependencies=[Depends(require_admin)],
+)
+async def upload_wholesale_groups_csv(
+    db: Annotated[Session, Depends(get_db)],
+    file: UploadFile = File(...),
+) -> CsvUploadResult:
+    content = await file.read()
+    parsed = csv_import_service.parse_wholesale_groups_csv(content)
+    created, skipped, errors = csv_import_service.bulk_create_wholesale_groups(db, parsed)
+    db.commit()
+    return CsvUploadResult(created=created, skipped=skipped, errors=[CsvRowError(**e) for e in errors])
+
+
+@router.post(
+    cr_prefix + "/upload-csv",
+    response_model=CsvUploadResult,
+    dependencies=[Depends(require_admin)],
+)
+async def upload_commission_rates_csv(
+    db: Annotated[Session, Depends(get_db)],
+    file: UploadFile = File(...),
+) -> CsvUploadResult:
+    content = await file.read()
+    parsed = csv_import_service.parse_commission_rates_csv(content)
+    created, skipped, errors = csv_import_service.bulk_create_commission_rates(db, parsed)
+    db.commit()
+    return CsvUploadResult(created=created, skipped=skipped, errors=[CsvRowError(**e) for e in errors])

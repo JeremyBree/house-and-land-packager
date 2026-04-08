@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { PageHeader } from '@/components/common/PageHeader'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
+import { CsvImportButton } from '@/components/common/CsvImportButton'
 import {
   listTravelSurcharges,
   createTravelSurcharge,
@@ -85,9 +86,12 @@ export default function TravelSurchargesPage() {
         title="Travel Surcharges"
         description="Suburb-based travel surcharge amounts."
         actions={
-          <Button onClick={openNew}>
-            <Plus className="h-4 w-4" /> New Surcharge
-          </Button>
+          <div className="flex gap-2">
+            <CsvImportButton endpoint="/api/pricing-reference/travel-surcharges/upload-csv" onSuccess={() => queryClient.invalidateQueries({ queryKey: ['travel-surcharges'] })} />
+            <Button onClick={openNew}>
+              <Plus className="h-4 w-4" /> New Surcharge
+            </Button>
+          </div>
         }
       />
 

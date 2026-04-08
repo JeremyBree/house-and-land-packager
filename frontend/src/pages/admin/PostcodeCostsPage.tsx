@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { PageHeader } from '@/components/common/PageHeader'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
+import { CsvImportButton } from '@/components/common/CsvImportButton'
 import {
   listPostcodeCosts,
   createPostcodeCost,
@@ -76,9 +77,12 @@ export default function PostcodeCostsPage() {
         title="Postcode Site Costs"
         description="Rock removal costs by postcode."
         actions={
-          <Button onClick={openNew}>
-            <Plus className="h-4 w-4" /> New Postcode Cost
-          </Button>
+          <div className="flex gap-2">
+            <CsvImportButton endpoint="/api/pricing-reference/postcode-costs/upload-csv" onSuccess={() => queryClient.invalidateQueries({ queryKey: ['postcode-costs'] })} />
+            <Button onClick={openNew}>
+              <Plus className="h-4 w-4" /> New Postcode Cost
+            </Button>
+          </div>
         }
       />
 

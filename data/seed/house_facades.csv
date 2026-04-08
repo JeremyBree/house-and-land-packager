@@ -1,0 +1,350 @@
+brand,house_name,facade_name,facade_price,facade_details,is_included
+Hermitage Homes,Access 18 HPS,Fisher,2900,,False
+Hermitage Homes,Access 18 HPS,Duke,0,,True
+Hermitage Homes,Access 18 HPS,Deakin,2900,,False
+Hermitage Homes,Access 18 HPS,Summit,0,,True
+Hermitage Homes,Access 18 HPS,Barton,2500,,False
+Hermitage Homes,Access 18 HPS,President,1000,,False
+Hermitage Homes,Access 18 IL,Fisher,2900,,False
+Hermitage Homes,Access 18 IL,Duke,0,,True
+Hermitage Homes,Access 18 IL,Deakin,2900,,False
+Hermitage Homes,Access 18 IL,Summit,0,,True
+Hermitage Homes,Access 18 IL,Barton,2500,,False
+Hermitage Homes,Access 18 IL,President,1000,,False
+Hermitage Homes,Access 19 HPS,Fisher,2900,,False
+Hermitage Homes,Access 19 HPS,Duke,0,,True
+Hermitage Homes,Access 19 HPS,Deakin,2900,,False
+Hermitage Homes,Access 19 HPS,Summit,0,,True
+Hermitage Homes,Access 19 HPS,Barton,2500,,False
+Hermitage Homes,Access 19 HPS,President,1000,,False
+Hermitage Homes,Access 19 IL,Fisher,2900,,False
+Hermitage Homes,Access 19 IL,Duke,0,,True
+Hermitage Homes,Access 19 IL,Deakin,2900,,False
+Hermitage Homes,Access 19 IL,Summit,0,,True
+Hermitage Homes,Access 19 IL,Barton,2500,,False
+Hermitage Homes,Access 19 IL,President,1000,,False
+Hermitage Homes,Access 20 HPS (Access 18 with Double Garage),Fisher,2900,,False
+Hermitage Homes,Access 20 HPS (Access 18 with Double Garage),Duke,0,,True
+Hermitage Homes,Access 20 HPS (Access 18 with Double Garage),Deakin,2900,,False
+Hermitage Homes,Access 20 HPS (Access 18 with Double Garage),Summit,0,,True
+Hermitage Homes,Access 20 HPS (Access 18 with Double Garage),Barton,2500,,False
+Hermitage Homes,Access 20 HPS (Access 18 with Double Garage),President,1000,,False
+Hermitage Homes,Access 20 IL (Access 18 with Double Garage),Fisher,2900,,False
+Hermitage Homes,Access 20 IL (Access 18 with Double Garage),Duke,0,,True
+Hermitage Homes,Access 20 IL (Access 18 with Double Garage),Deakin,2900,,False
+Hermitage Homes,Access 20 IL (Access 18 with Double Garage),Summit,0,,True
+Hermitage Homes,Access 20 IL (Access 18 with Double Garage),Barton,2500,,False
+Hermitage Homes,Access 20 IL (Access 18 with Double Garage),President,1000,,False
+Hermitage Homes,Access 22 HPS,Fisher,2900,,False
+Hermitage Homes,Access 22 HPS,Duke,0,,True
+Hermitage Homes,Access 22 HPS,Deakin,2900,,False
+Hermitage Homes,Access 22 HPS,Summit,0,,True
+Hermitage Homes,Access 22 HPS,Barton,2500,,False
+Hermitage Homes,Access 22 HPS,President,1000,,False
+Hermitage Homes,Access 22 IL,Fisher,2900,,False
+Hermitage Homes,Access 22 IL,Duke,0,,True
+Hermitage Homes,Access 22 IL,Deakin,2900,,False
+Hermitage Homes,Access 22 IL,Summit,0,,True
+Hermitage Homes,Access 22 IL,Barton,2500,,False
+Hermitage Homes,Access 22 IL,President,1000,,False
+Hermitage Homes,Access 23 HPS,Duke,0,,True
+Hermitage Homes,Access 23 HPS,Deakin,2900,,False
+Hermitage Homes,Access 23 HPS,Summit,0,,True
+Hermitage Homes,Access 23 HPS,Barton,2500,,False
+Hermitage Homes,Access 23 HPS,President,1000,,False
+Hermitage Homes,Access 23 IL,Duke,0,,True
+Hermitage Homes,Access 23 IL,Deakin,2900,,False
+Hermitage Homes,Access 23 IL,Summit,0,,True
+Hermitage Homes,Access 23 IL,Barton,2500,,False
+Hermitage Homes,Access 23 IL,President,1000,,False
+Hermitage Homes,Access 30 HPS,Duke,0,,True
+Hermitage Homes,Access 30 HPS,Deakin,2900,,False
+Hermitage Homes,Access 30 HPS,Summit,0,,True
+Hermitage Homes,Access 30 HPS,Barton,2500,,False
+Hermitage Homes,Access 30 HPS,President,1000,,False
+Hermitage Homes,Access 30 IL,Duke,0,,True
+Hermitage Homes,Access 30 IL,Deakin,2900,,False
+Hermitage Homes,Access 30 IL,Summit,0,,True
+Hermitage Homes,Access 30 IL,Barton,2500,,False
+Hermitage Homes,Access 30 IL,President,1000,,False
+Hermitage Homes,Baker 14,Duke,0,,True
+Hermitage Homes,Baker 14,Fisher,2900,,False
+Hermitage Homes,Baker 14,President,1000,,False
+Hermitage Homes,Baker 14,Barton,2500,,False
+Hermitage Homes,Baker 14,Deakin,2900,,False
+Hermitage Homes,Baker 14,Summit,0,,True
+Hermitage Homes,Baker 14,Chifley,5000,,False
+Hermitage Homes,Banks 12,Duke,0,,True
+Hermitage Homes,Banks 12,Fisher,2900,,False
+Hermitage Homes,Banks 12,President,1000,,False
+Hermitage Homes,Banks 12,Barton,2500,,False
+Hermitage Homes,Banks 12,Deakin,2900,,False
+Hermitage Homes,Banks 12,Summit,0,,True
+Hermitage Homes,Banks 12,Chifley,5000,,False
+Hermitage Homes,Cabot 13,Duke,0,,True
+Hermitage Homes,Cabot 13,Fisher,2900,,False
+Hermitage Homes,Cabot 13,President,1000,,False
+Hermitage Homes,Cabot 13,Deakin,2900,,False
+Hermitage Homes,Cabot 13,Barton,2500,,False
+Hermitage Homes,Cabot 13,Summit,0,,True
+Hermitage Homes,Cabot 13,Chifley,5000,,False
+Hermitage Homes,Cabot 15  (Cabot 13 with double Garage),Duke,0,,True
+Hermitage Homes,Cabot 15  (Cabot 13 with double Garage),Fisher,2900,,False
+Hermitage Homes,Cabot 15  (Cabot 13 with double Garage),President,1000,,False
+Hermitage Homes,Cabot 15  (Cabot 13 with double Garage),Deakin,2900,,False
+Hermitage Homes,Cabot 15  (Cabot 13 with double Garage),Barton,2500,,False
+Hermitage Homes,Cabot 15  (Cabot 13 with double Garage),Summit,0,,True
+Hermitage Homes,Cabot 15  (Cabot 13 with double Garage),Chifley,5000,,False
+Hermitage Homes,Cambridge 28,Alpha,3900,,False
+Hermitage Homes,Cambridge 28,Keating,19900,,False
+Hermitage Homes,Cambridge 28,Prominent,4900,,False
+Hermitage Homes,Cambridge 28,Traditional,0,,True
+Hermitage Homes,Cambridge 31,Alpha,3900,,False
+Hermitage Homes,Cambridge 31,Keating,19900,,False
+Hermitage Homes,Cambridge 31,Prominent,4900,,False
+Hermitage Homes,Cambridge 31,Traditional,0,,True
+Hermitage Homes,Cartier 15 GE,Duke,0,,True
+Hermitage Homes,Cartier 15 GE,Fisher,2900,,False
+Hermitage Homes,Cartier 15 GE,President,1000,,False
+Hermitage Homes,Cartier 15 GE,Deakin,2900,,False
+Hermitage Homes,Cartier 15 GE,Barton,2500,,False
+Hermitage Homes,Cartier 15 GE,Summit,0,,True
+Hermitage Homes,Cartier 15 GE,Chifley,5000,,False
+Hermitage Homes,Catalina 22 GE,Alpha,3900,,False
+Hermitage Homes,Catalina 22 GE,Keating,19900,,False
+Hermitage Homes,Catalina 22 GE,Prominent,4900,,False
+Hermitage Homes,Catalina 22 GE,Traditional,0,,True
+Hermitage Homes,Chelsea 16,Duke,0,,True
+Hermitage Homes,Chelsea 16,Fisher,2900,,False
+Hermitage Homes,Chelsea 16,President,1000,,False
+Hermitage Homes,Chelsea 16,Barton,2500,,False
+Hermitage Homes,Chelsea 16,Deakin,2900,,False
+Hermitage Homes,Chelsea 16,Summit,0,,True
+Hermitage Homes,Chelsea 16,Chifley,5000,,False
+Hermitage Homes,Chelsea 18 (Chelsea 16 with double Garage),Duke,0,,True
+Hermitage Homes,Chelsea 18 (Chelsea 16 with double Garage),Fisher,2900,,False
+Hermitage Homes,Chelsea 18 (Chelsea 16 with double Garage),President,1000,,False
+Hermitage Homes,Chelsea 18 (Chelsea 16 with double Garage),Barton,2500,,False
+Hermitage Homes,Chelsea 18 (Chelsea 16 with double Garage),Deakin,2900,,False
+Hermitage Homes,Chelsea 18 (Chelsea 16 with double Garage),Summit,0,,True
+Hermitage Homes,Chelsea 18 (Chelsea 16 with double Garage),Chifley,5000,,False
+Hermitage Homes,Drake 19,Duke,0,,True
+Hermitage Homes,Drake 19,Fisher,2900,,False
+Hermitage Homes,Drake 19,President,1000,,False
+Hermitage Homes,Drake 19,Barton,2500,,False
+Hermitage Homes,Drake 19,Deakin,2900,,False
+Hermitage Homes,Drake 19,Summit,0,,True
+Hermitage Homes,Drake 19,Chifley,5000,,False
+Hermitage Homes,Drake 19 GE,Duke,0,,True
+Hermitage Homes,Drake 19 GE,Fisher,2900,,False
+Hermitage Homes,Drake 19 GE,President,1000,,False
+Hermitage Homes,Drake 19 GE,Barton,2500,,False
+Hermitage Homes,Drake 19 GE,Deakin,2900,,False
+Hermitage Homes,Drake 19 GE,Summit,0,,True
+Hermitage Homes,Drake 19 GE,Chifley,5000,,False
+Hermitage Homes,Elwood 20,Duke,0,,True
+Hermitage Homes,Elwood 20,Fisher,2900,,False
+Hermitage Homes,Elwood 20,President,1000,,False
+Hermitage Homes,Elwood 20,Barton,2500,,False
+Hermitage Homes,Elwood 20,Deakin,2900,,False
+Hermitage Homes,Elwood 20,Summit,0,,True
+Hermitage Homes,Elwood 20,Chifley,5000,,False
+Hermitage Homes,Elwood 20L,Duke,0,,True
+Hermitage Homes,Elwood 20L,Fisher,2900,,False
+Hermitage Homes,Elwood 20L,President,1000,,False
+Hermitage Homes,Elwood 20L,Barton,2500,,False
+Hermitage Homes,Elwood 20L,Deakin,2900,,False
+Hermitage Homes,Elwood 20L,Summit,0,,True
+Hermitage Homes,Elwood 20L,Chifley,5000,,False
+Hermitage Homes,Evans 20,Alpha,3900,,False
+Hermitage Homes,Evans 20,Keating,19900,,False
+Hermitage Homes,Evans 20,Prominent,4900,,False
+Hermitage Homes,Evans 20,Traditional,0,,True
+Hermitage Homes,Flinders 19,Duke,0,,True
+Hermitage Homes,Flinders 19,Fisher,2900,,False
+Hermitage Homes,Flinders 19,President,1000,,False
+Hermitage Homes,Flinders 19,Barton,2500,,False
+Hermitage Homes,Flinders 19,Deakin,2900,,False
+Hermitage Homes,Flinders 19,Summit,0,,True
+Hermitage Homes,Flinders 19,Chifley,5000,,False
+Hermitage Homes,Forrest 32-1B GE,Duke,0,,True
+Hermitage Homes,Forrest 32-1B GE,Fisher,2900,,False
+Hermitage Homes,Forrest 32-1B GE,President,1000,,False
+Hermitage Homes,Forrest 32-1B GE,Barton,2500,,False
+Hermitage Homes,Forrest 32-1B GE,Deakin,2900,,False
+Hermitage Homes,Forrest 32-1B GE,Summit,0,,True
+Hermitage Homes,Forrest 32-1B GE,Chifley,5000,,False
+Hermitage Homes,Gama 17,Duke,0,,True
+Hermitage Homes,Gama 17,Fisher,2900,,False
+Hermitage Homes,Gama 17,President,1000,,False
+Hermitage Homes,Gama 17,Barton,2500,,False
+Hermitage Homes,Gama 17,Deakin,2900,,False
+Hermitage Homes,Gama 17,Summit,0,,True
+Hermitage Homes,Gama 17,Chifley,5000,,False
+Hermitage Homes,Gibson 13,Duke,0,,True
+Hermitage Homes,Gibson 13,Fisher,2900,,False
+Hermitage Homes,Gibson 13,President,1000,,False
+Hermitage Homes,Gibson 13,Barton,2500,,False
+Hermitage Homes,Gibson 13,Deakin,2900,,False
+Hermitage Homes,Gibson 13,Summit,0,,True
+Hermitage Homes,Gibson 13,Chifley,5000,,False
+Hermitage Homes,Heath 21,Duke,0,,True
+Hermitage Homes,Heath 21,Fisher,2900,,False
+Hermitage Homes,Heath 21,President,1000,,False
+Hermitage Homes,Heath 21,Barton,2500,,False
+Hermitage Homes,Heath 21,Deakin,2900,,False
+Hermitage Homes,Heath 21,Summit,0,,True
+Hermitage Homes,Heath 21,Chifley,5000,,False
+Hermitage Homes,Heath 21 GE,Duke,0,,True
+Hermitage Homes,Heath 21 GE,Fisher,2900,,False
+Hermitage Homes,Heath 21 GE,President,1000,,False
+Hermitage Homes,Heath 21 GE,Barton,2500,,False
+Hermitage Homes,Heath 21 GE,Deakin,2900,,False
+Hermitage Homes,Heath 21 GE,Summit,0,,True
+Hermitage Homes,Heath 21 GE,Chifley,5000,,False
+Hermitage Homes,Hudson 28,Duke,0,,True
+Hermitage Homes,Hudson 28,Fisher,2900,,False
+Hermitage Homes,Hudson 28,President,1000,,False
+Hermitage Homes,Hudson 28,Barton,2500,,False
+Hermitage Homes,Hudson 28,Deakin,2900,,False
+Hermitage Homes,Hudson 28,Summit,0,,True
+Hermitage Homes,Hudson 28,Chifley,5000,,False
+Hermitage Homes,Hume 15,Duke,0,,True
+Hermitage Homes,Hume 15,Fisher,2900,,False
+Hermitage Homes,Hume 15,President,1000,,False
+Hermitage Homes,Hume 15,Barton,2500,,False
+Hermitage Homes,Hume 15,Deakin,2900,,False
+Hermitage Homes,Hume 15,Summit,0,,True
+Hermitage Homes,Hume 15,Chifley,5000,,False
+Hermitage Homes,Jackson 18,Duke,0,,True
+Hermitage Homes,Jackson 18,Fisher,2900,,False
+Hermitage Homes,Jackson 18,President,1000,,False
+Hermitage Homes,Jackson 18,Barton,2500,,False
+Hermitage Homes,Jackson 18,Deakin,2900,,False
+Hermitage Homes,Jackson 18,Summit,0,,True
+Hermitage Homes,Jackson 18,Chifley,5000,,False
+Hermitage Homes,Jackson 18 GE,Duke,0,,True
+Hermitage Homes,Jackson 18 GE,Fisher,2900,,False
+Hermitage Homes,Jackson 18 GE,President,1000,,False
+Hermitage Homes,Jackson 18 GE,Barton,2500,,False
+Hermitage Homes,Jackson 18 GE,Deakin,2900,,False
+Hermitage Homes,Jackson 18 GE,Summit,0,,True
+Hermitage Homes,Jackson 18 GE,Chifley,5000,,False
+Hermitage Homes,Jackson 20 (Jackon 18 with double Garage),Duke,0,,True
+Hermitage Homes,Jackson 20 (Jackon 18 with double Garage),Fisher,2900,,False
+Hermitage Homes,Jackson 20 (Jackon 18 with double Garage),President,1000,,False
+Hermitage Homes,Jackson 20 (Jackon 18 with double Garage),Barton,2500,,False
+Hermitage Homes,Jackson 20 (Jackon 18 with double Garage),Deakin,2900,,False
+Hermitage Homes,Jackson 20 (Jackon 18 with double Garage),Summit,0,,True
+Hermitage Homes,Jackson 20 (Jackon 18 with double Garage),Chifley,5000,,False
+Hermitage Homes,Jackson 20 GE (Jackon 18 with double Garage),Duke,0,,True
+Hermitage Homes,Jackson 20 GE (Jackon 18 with double Garage),Fisher,2900,,False
+Hermitage Homes,Jackson 20 GE (Jackon 18 with double Garage),President,1000,,False
+Hermitage Homes,Jackson 20 GE (Jackon 18 with double Garage),Barton,2500,,False
+Hermitage Homes,Jackson 20 GE (Jackon 18 with double Garage),Deakin,2900,,False
+Hermitage Homes,Jackson 20 GE (Jackon 18 with double Garage),Summit,0,,True
+Hermitage Homes,Jackson 20 GE (Jackon 18 with double Garage),Chifley,5000,,False
+Hermitage Homes,Kennedy 22,Duke,0,,True
+Hermitage Homes,Kennedy 22,Fisher,2900,,False
+Hermitage Homes,Kennedy 22,President,1000,,False
+Hermitage Homes,Kennedy 22,Barton,2500,,False
+Hermitage Homes,Kennedy 22,Deakin,2900,,False
+Hermitage Homes,Kennedy 22,Summit,0,,True
+Hermitage Homes,Kennedy 22,Chifley,5000,,False
+Hermitage Homes,Kennedy 22L,Duke,0,,True
+Hermitage Homes,Kennedy 22L,Fisher,2900,,False
+Hermitage Homes,Kennedy 22L,President,1000,,False
+Hermitage Homes,Kennedy 22L,Barton,2500,,False
+Hermitage Homes,Kennedy 22L,Deakin,2900,,False
+Hermitage Homes,Kennedy 22L,Summit,0,,True
+Hermitage Homes,Kennedy 22L,Chifley,5000,,False
+Hermitage Homes,Kennedy 22L GE,Duke,0,,True
+Hermitage Homes,Kennedy 22L GE,Fisher,2900,,False
+Hermitage Homes,Kennedy 22L GE,President,1000,,False
+Hermitage Homes,Kennedy 22L GE,Barton,2500,,False
+Hermitage Homes,Kennedy 22L GE,Deakin,2900,,False
+Hermitage Homes,Kennedy 22L GE,Summit,0,,True
+Hermitage Homes,Kennedy 22L GE,Chifley,5000,,False
+Hermitage Homes,Leon 22-1B GE,Duke,0,,True
+Hermitage Homes,Leon 22-1B GE,Fisher,2900,,False
+Hermitage Homes,Leon 22-1B GE,President,1000,,False
+Hermitage Homes,Leon 22-1B GE,Barton,2500,,False
+Hermitage Homes,Leon 22-1B GE,Deakin,2900,,False
+Hermitage Homes,Leon 22-1B GE,Summit,0,,True
+Hermitage Homes,Leon 22-1B GE,Chifley,5000,,False
+Hermitage Homes,Leon 25 GE,Duke,0,,True
+Hermitage Homes,Leon 25 GE,Fisher,2900,,False
+Hermitage Homes,Leon 25 GE,President,1000,,False
+Hermitage Homes,Leon 25 GE,Deakin,2900,,False
+Hermitage Homes,Leon 25 GE,Barton,2500,,False
+Hermitage Homes,Leon 25 GE,Summit,0,,True
+Hermitage Homes,Leon 25 GE,Chifley,5000,,False
+Hermitage Homes,Lucas 16,Duke,0,,True
+Hermitage Homes,Lucas 16,Fisher,2900,,False
+Hermitage Homes,Lucas 16,President,1000,,False
+Hermitage Homes,Lucas 16,Deakin,2900,,False
+Hermitage Homes,Lucas 16,Barton,2500,,False
+Hermitage Homes,Lucas 16,Summit,0,,True
+Hermitage Homes,Lucas 16,Chifley,5000,,False
+Hermitage Homes,Marco 25,Duke,0,,True
+Hermitage Homes,Marco 25,Fisher,2900,,False
+Hermitage Homes,Marco 25,President,1000,,False
+Hermitage Homes,Marco 25,Barton,2500,,False
+Hermitage Homes,Marco 25,Deakin,2900,,False
+Hermitage Homes,Marco 25,Summit,0,,True
+Hermitage Homes,Marco 25,Chifley,5000,,False
+Hermitage Homes,Mawson 18,Duke,0,,True
+Hermitage Homes,Mawson 18,Fisher,2900,,False
+Hermitage Homes,Mawson 18,President,1000,,False
+Hermitage Homes,Mawson 18,Barton,2500,,False
+Hermitage Homes,Mawson 18,Deakin,2900,,False
+Hermitage Homes,Mawson 18,Summit,0,,True
+Hermitage Homes,Mawson 18,Chifley,5000,,False
+Hermitage Homes,Onix 17,Duke,0,,True
+Hermitage Homes,Onix 17,Fisher,2900,,False
+Hermitage Homes,Onix 17,President,1000,,False
+Hermitage Homes,Onix 17,Barton,2500,,False
+Hermitage Homes,Onix 17,Deakin,2900,,False
+Hermitage Homes,Onix 17,Summit,0,,True
+Hermitage Homes,Onix 17,Chifley,5000,,False
+Hermitage Homes,Oxford 27,Alpha,3900,,False
+Hermitage Homes,Oxford 27,Keating,19900,,False
+Hermitage Homes,Oxford 27,Prominent,4900,,False
+Hermitage Homes,Oxford 27,Traditional,0,,True
+Hermitage Homes,Polo 26,Duke,0,,True
+Hermitage Homes,Polo 26,Fisher,2900,,False
+Hermitage Homes,Polo 26,President,1000,,False
+Hermitage Homes,Polo 26,Barton,2500,,False
+Hermitage Homes,Polo 26,Deakin,2900,,False
+Hermitage Homes,Polo 26,Summit,0,,True
+Hermitage Homes,Polo 26,Chifley,5000,,False
+Hermitage Homes,Raleigh 17 GE,Duke,0,,True
+Hermitage Homes,Raleigh 17 GE,Fisher,2900,,False
+Hermitage Homes,Raleigh 17 GE,President,1000,,False
+Hermitage Homes,Raleigh 17 GE,Barton,2500,,False
+Hermitage Homes,Raleigh 17 GE,Deakin,2900,,False
+Hermitage Homes,Raleigh 17 GE,Summit,0,,True
+Hermitage Homes,Raleigh 17 GE,Chifley,5000,,False
+Hermitage Homes,Spencer 17,Elementary,0,,True
+Hermitage Homes,Spencer 24,Elementary,0,,True
+Hermitage Homes,Walker 20,Duke,0,,True
+Hermitage Homes,Walker 20,Fisher,2900,,False
+Hermitage Homes,Walker 20,President,1000,,False
+Hermitage Homes,Walker 20,Barton,2500,,False
+Hermitage Homes,Walker 20,Deakin,2900,,False
+Hermitage Homes,Walker 20,Summit,0,,True
+Hermitage Homes,Walker 20,Chifley,5000,,False
+Hermitage Homes,Wentworth 22,Duke,0,,True
+Hermitage Homes,Wentworth 22,Fisher,2900,,False
+Hermitage Homes,Wentworth 22,President,1000,,False
+Hermitage Homes,Wentworth 22,Barton,2500,,False
+Hermitage Homes,Wentworth 22,Deakin,2900,,False
+Hermitage Homes,Wentworth 22,Summit,0,,True
+Hermitage Homes,Wentworth 22,Chifley,5000,,False
+Hermitage Homes,Wentworth 24,Duke,0,,True
+Hermitage Homes,Wentworth 24,Fisher,2900,,False
+Hermitage Homes,Wentworth 24,President,1000,,False
+Hermitage Homes,Wentworth 24,Barton,2500,,False
+Hermitage Homes,Wentworth 24,Deakin,2900,,False
+Hermitage Homes,Wentworth 24,Summit,0,,True
+Hermitage Homes,Wentworth 24,Chifley,5000,,False

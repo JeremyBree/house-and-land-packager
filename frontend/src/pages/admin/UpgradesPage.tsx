@@ -31,6 +31,7 @@ import {
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { PageHeader } from '@/components/common/PageHeader'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
+import { CsvImportButton } from '@/components/common/CsvImportButton'
 import {
   listUpgradeCategories,
   createUpgradeCategory,
@@ -209,16 +210,20 @@ export default function UpgradesPage() {
         title="Upgrades"
         description="Manage upgrade categories and items per brand."
         actions={
-          <Select value={brand} onValueChange={setBrand}>
-            <SelectTrigger className="w-[220px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {BRANDS.map((b) => (
-                <SelectItem key={b} value={b}>{b}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex gap-2">
+            <CsvImportButton endpoint="/api/upgrades/categories/upload-csv" label="Import Categories" onSuccess={() => { queryClient.invalidateQueries({ queryKey: ['upgrade-categories'] }); queryClient.invalidateQueries({ queryKey: ['upgrade-items'] }) }} />
+            <CsvImportButton endpoint="/api/upgrades/items/upload-csv" label="Import Items" onSuccess={() => { queryClient.invalidateQueries({ queryKey: ['upgrade-categories'] }); queryClient.invalidateQueries({ queryKey: ['upgrade-items'] }) }} />
+            <Select value={brand} onValueChange={setBrand}>
+              <SelectTrigger className="w-[220px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {BRANDS.map((b) => (
+                  <SelectItem key={b} value={b}>{b}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         }
       />
 

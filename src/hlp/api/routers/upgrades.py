@@ -2,7 +2,7 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, File, Query, UploadFile, status
 from sqlalchemy.orm import Session
 
 from hlp.api.deps import get_current_user, get_db, require_admin
@@ -14,7 +14,9 @@ from hlp.api.schemas.upgrade_schema import (
     UpgradeItemRead,
     UpgradeItemUpdate,
 )
+from hlp.api.schemas.common import CsvRowError, CsvUploadResult
 from hlp.repositories import upgrade_repository
+from hlp.shared import csv_import_service
 from hlp.shared.exceptions import NotFoundError
 
 router = APIRouter(prefix="/api/upgrades", tags=["upgrades"])
@@ -151,3 +153,38 @@ def delete_item(
         raise NotFoundError(f"UpgradeItem {upgrade_id} not found")
     upgrade_repository.delete_item(db, upgrade_id)
     db.commit()
+
+
+# ---- CSV Uploads -------------------------------------------------------------
+
+
+@router.post(
+    "/categories/upload-csv",
+    response_model=CsvUploadResult,
+    dependencies=[Depends(require_admin)],
+)
+async def upload_categories_csv(
+    db: Annotated[Session, Depends(get_db)],
+    file: UploadFile = File(...),
+) -> CsvUploadResult:
+    content = await file.read()
+    parsed = csv_import_service.parse_upgrade_categories_csv(content)
+    created, skipped, errors = csv_import_service.bulk_create_upgrade_categories(db, parsed)
+    db.commit()
+    return CsvUploadResult(created=created, skipped=skipped, errors=[CsvRowError(**e) for e in errors])
+
+
+@router.post(
+    "/items/upload-csv",
+    response_model=CsvUploadResult,
+    dependencies=[Depends(require_admin)],
+)
+async def upload_items_csv(
+    db: Annotated[Session, Depends(get_db)],
+    file: UploadFile = File(...),
+) -> CsvUploadResult:
+    content = await file.read()
+    parsed = csv_import_service.parse_upgrade_items_csv(content)
+    created, skipped, errors = csv_import_service.bulk_create_upgrade_items(db, parsed)
+    db.commit()
+    return CsvUploadResult(created=created, skipped=skipped, errors=[CsvRowError(**e) for e in errors])

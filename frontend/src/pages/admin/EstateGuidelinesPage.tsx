@@ -31,6 +31,7 @@ import {
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { PageHeader } from '@/components/common/PageHeader'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
+import { CsvImportButton } from '@/components/common/CsvImportButton'
 import {
   listGuidelineTypes,
   createGuidelineType,
@@ -210,6 +211,12 @@ export default function EstateGuidelinesPage() {
       <PageHeader
         title="Estate Guidelines"
         description="Manage guideline types and per-estate design guideline overrides."
+        actions={
+          <div className="flex gap-2">
+            <CsvImportButton endpoint="/api/guidelines/types/upload-csv" label="Import Types" onSuccess={() => queryClient.invalidateQueries({ queryKey: ['guideline-types'] })} />
+            <CsvImportButton endpoint="/api/guidelines/estate/upload-csv" label="Import Guidelines" onSuccess={() => { queryClient.invalidateQueries({ queryKey: ['guideline-types'] }); queryClient.invalidateQueries({ queryKey: ['estate-guidelines'] }) }} />
+          </div>
+        }
       />
 
       {/* ---- Guideline Types ---- */}

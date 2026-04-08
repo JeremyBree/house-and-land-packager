@@ -169,7 +169,6 @@ def seed_dev(db: Session) -> None:
     _seed_house_packages(db)
     _seed_pricing_categories_and_rules(db)
     _seed_pricing_configs(db)
-    _seed_pricing_workbook(db)
 
     for user_fields in USERS:
         existing = profile_repository.get_by_email(db, user_fields["email"])
@@ -727,49 +726,3 @@ def _seed_pricing_configs(db: Session) -> None:
     db.flush()
 
 
-def _seed_pricing_workbook(db: Session) -> None:
-    """One-time import of pricing reference data from the 2026 workbook.
-
-    Only runs if no house designs exist yet (guard against re-importing).
-    """
-    import glob
-    import os
-
-    from hlp.models.house_design import HouseDesign
-
-    existing_count = db.execute(
-        select(HouseDesign.design_id).limit(1)
-    ).scalar_one_or_none()
-    if existing_count is not None:
-        logger.info("Pricing data already seeded — skipping workbook import")
-        return
-
-    # Find the workbook in known locations
-    workbook_patterns = [
-        "/app/reference/*.xlsm",  # Docker container
-        os.path.join(os.path.dirname(__file__), "..", "..", "..", "Reference", "Pricing sheet 2026.xlsm"),
-    ]
-    workbook_path = None
-    for pattern in workbook_patterns:
-        matches = glob.glob(pattern)
-        if matches:
-            workbook_path = matches[0]
-            break
-
-    if workbook_path is None:
-        logger.warning("Pricing workbook not found — skipping reference data seed")
-        return
-
-    from hlp.seeds.import_pricing_workbook import import_from_excel
-
-    logger.info("Seeding pricing reference data from: %s", workbook_path)
-    result = import_from_excel(db, workbook_path, "Hermitage Homes")
-    db.flush()
-    logger.info(
-        "Pricing seed complete: %d houses, %d facades, %d energy ratings, "
-        "%d upgrades, %d commissions, %d surcharges, %d guidelines, %d skipped",
-        result.houses_created, result.facades_created,
-        result.energy_ratings_created, result.upgrades_created,
-        result.commission_rates_created, result.travel_surcharges_created,
-        result.estate_guidelines_created, result.skipped,
-    )

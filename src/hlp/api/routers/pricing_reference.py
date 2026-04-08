@@ -2,7 +2,7 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, File, Query, UploadFile, status
 from sqlalchemy.orm import Session
 
 from hlp.api.deps import get_current_user, get_db, require_admin
@@ -23,7 +23,9 @@ from hlp.api.schemas.pricing_reference_schema import (
     TravelSurchargeRead,
     TravelSurchargeUpdate,
 )
+from hlp.api.schemas.common import CsvRowError, CsvUploadResult
 from hlp.repositories import pricing_reference_repository as repo
+from hlp.shared import csv_import_service
 
 router = APIRouter(prefix="/api/pricing-reference", tags=["pricing-reference"])
 
@@ -323,3 +325,86 @@ def delete_fbc_band(
 ) -> None:
     repo.delete_fbc_band(db, band_id)
     db.commit()
+
+
+# ── CSV Uploads ───────────────────────────────────────────────────────
+
+
+@router.post(
+    "/travel-surcharges/upload-csv",
+    response_model=CsvUploadResult,
+    dependencies=[Depends(require_admin)],
+)
+async def upload_travel_surcharges_csv(
+    db: Annotated[Session, Depends(get_db)],
+    file: UploadFile = File(...),
+) -> CsvUploadResult:
+    content = await file.read()
+    parsed = csv_import_service.parse_travel_surcharges_csv(content)
+    created, skipped, errors = csv_import_service.bulk_create_travel_surcharges(db, parsed)
+    db.commit()
+    return CsvUploadResult(created=created, skipped=skipped, errors=[CsvRowError(**e) for e in errors])
+
+
+@router.post(
+    "/postcode-costs/upload-csv",
+    response_model=CsvUploadResult,
+    dependencies=[Depends(require_admin)],
+)
+async def upload_postcode_costs_csv(
+    db: Annotated[Session, Depends(get_db)],
+    file: UploadFile = File(...),
+) -> CsvUploadResult:
+    content = await file.read()
+    parsed = csv_import_service.parse_postcode_costs_csv(content)
+    created, skipped, errors = csv_import_service.bulk_create_postcode_costs(db, parsed)
+    db.commit()
+    return CsvUploadResult(created=created, skipped=skipped, errors=[CsvRowError(**e) for e in errors])
+
+
+@router.post(
+    "/fbc-bands/upload-csv",
+    response_model=CsvUploadResult,
+    dependencies=[Depends(require_admin)],
+)
+async def upload_fbc_bands_csv(
+    db: Annotated[Session, Depends(get_db)],
+    file: UploadFile = File(...),
+) -> CsvUploadResult:
+    content = await file.read()
+    parsed = csv_import_service.parse_fbc_bands_csv(content)
+    created, skipped, errors = csv_import_service.bulk_create_fbc_bands(db, parsed)
+    db.commit()
+    return CsvUploadResult(created=created, skipped=skipped, errors=[CsvRowError(**e) for e in errors])
+
+
+@router.post(
+    "/site-cost-tiers/upload-csv",
+    response_model=CsvUploadResult,
+    dependencies=[Depends(require_admin)],
+)
+async def upload_site_cost_tiers_csv(
+    db: Annotated[Session, Depends(get_db)],
+    file: UploadFile = File(...),
+) -> CsvUploadResult:
+    content = await file.read()
+    parsed = csv_import_service.parse_site_cost_tiers_csv(content)
+    created, skipped, errors = csv_import_service.bulk_create_site_cost_tiers(db, parsed)
+    db.commit()
+    return CsvUploadResult(created=created, skipped=skipped, errors=[CsvRowError(**e) for e in errors])
+
+
+@router.post(
+    "/site-cost-items/upload-csv",
+    response_model=CsvUploadResult,
+    dependencies=[Depends(require_admin)],
+)
+async def upload_site_cost_items_csv(
+    db: Annotated[Session, Depends(get_db)],
+    file: UploadFile = File(...),
+) -> CsvUploadResult:
+    content = await file.read()
+    parsed = csv_import_service.parse_site_cost_items_csv(content)
+    created, skipped, errors = csv_import_service.bulk_create_site_cost_items(db, parsed)
+    db.commit()
+    return CsvUploadResult(created=created, skipped=skipped, errors=[CsvRowError(**e) for e in errors])

@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/table'
 import { PageHeader } from '@/components/common/PageHeader'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
+import { CsvImportButton } from '@/components/common/CsvImportButton'
 import { useToast } from '@/components/ui/toast'
 import { extractErrorMessage } from '@/api/client'
 import {
@@ -205,9 +206,12 @@ export default function CommissionsPage() {
           title="Wholesale Groups"
           description="Manage wholesale groups used in BDM commission calculations."
           actions={
-            <Button onClick={() => { setWgEditing(null); setWgFormOpen(true) }}>
-              <Plus className="h-4 w-4" /> New Group
-            </Button>
+            <div className="flex gap-2">
+              <CsvImportButton endpoint="/api/wholesale-groups/upload-csv" label="Import Groups" onSuccess={() => queryClient.invalidateQueries({ queryKey: ['wholesale-groups'] })} />
+              <Button onClick={() => { setWgEditing(null); setWgFormOpen(true) }}>
+                <Plus className="h-4 w-4" /> New Group
+              </Button>
+            </div>
           }
         />
 
@@ -260,9 +264,12 @@ export default function CommissionsPage() {
           title="Commission Rates"
           description="Manage BDM commission rates per wholesale group and brand."
           actions={
-            <Button onClick={() => { setCrEditing(null); setCrFormOpen(true) }}>
-              <Plus className="h-4 w-4" /> New Rate
-            </Button>
+            <div className="flex gap-2">
+              <CsvImportButton endpoint="/api/commission-rates/upload-csv" label="Import Rates" onSuccess={() => queryClient.invalidateQueries({ queryKey: ['commission-rates'] })} />
+              <Button onClick={() => { setCrEditing(null); setCrFormOpen(true) }}>
+                <Plus className="h-4 w-4" /> New Rate
+              </Button>
+            </div>
           }
         />
 

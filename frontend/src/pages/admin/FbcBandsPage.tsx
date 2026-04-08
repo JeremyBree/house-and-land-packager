@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { PageHeader } from '@/components/common/PageHeader'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
+import { CsvImportButton } from '@/components/common/CsvImportButton'
 import {
   listFbcBands,
   createFbcBand,
@@ -90,6 +91,7 @@ export default function FbcBandsPage() {
         description="Future build cost escalation multipliers by day range and brand."
         actions={
           <div className="flex items-center gap-3">
+            <CsvImportButton endpoint="/api/pricing-reference/fbc-bands/upload-csv" onSuccess={() => queryClient.invalidateQueries({ queryKey: ['fbc-bands'] })} />
             <Select
               value={brandFilter || 'all'}
               onValueChange={(v) => setBrandFilter(v === 'all' ? undefined : v)}

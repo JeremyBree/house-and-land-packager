@@ -2,7 +2,7 @@
 
 from typing import Generic, TypeVar
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 T = TypeVar("T")
 
@@ -13,6 +13,17 @@ class PaginatedResponse(BaseModel, Generic[T]):
     page: int
     size: int
     pages: int
+
+
+class CsvRowError(BaseModel):
+    row: int
+    error: str
+
+
+class CsvUploadResult(BaseModel):
+    created: int
+    skipped: int
+    errors: list[CsvRowError] = Field(default_factory=list)
 
 
 class ErrorResponse(BaseModel):
