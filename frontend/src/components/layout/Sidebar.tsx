@@ -25,6 +25,7 @@ import {
   MapPinned,
   TrendingUp,
   BookOpen,
+  Tags,
   ListPlus,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -63,7 +64,8 @@ const adminNav: NavItem[] = [
   { to: '/admin/postcode-costs', label: 'Postcode Costs', icon: MapPinned },
   { to: '/admin/fbc-bands', label: 'FBC Bands', icon: TrendingUp },
   { to: '/admin/upgrades', label: 'Upgrades', icon: ListPlus },
-  { to: '/admin/estate-guidelines', label: 'Design Guidelines', icon: BookOpen },
+  { to: '/admin/guideline-categories', label: 'Guideline Categories', icon: Tags },
+  { to: '/admin/estate-guidelines', label: 'Estate Guidelines', icon: BookOpen },
   { to: '/admin/api-keys', label: 'API Keys', icon: KeyRound },
   { to: '/admin/configurations', label: 'Configurations', icon: Globe },
   { to: '/admin/ingestion-logs', label: 'Ingestion Logs', icon: ClipboardList },

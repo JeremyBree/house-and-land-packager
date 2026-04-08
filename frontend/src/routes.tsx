@@ -33,6 +33,7 @@ import PostcodeCostsPage from '@/pages/admin/PostcodeCostsPage'
 import FbcBandsPage from '@/pages/admin/FbcBandsPage'
 import UpgradesPage from '@/pages/admin/UpgradesPage'
 import EstateGuidelinesPage from '@/pages/admin/EstateGuidelinesPage'
+import GuidelineCategoriesPage from '@/pages/admin/GuidelineCategoriesPage'
 import PdfIngestionPage from '@/pages/PdfIngestionPage'
 import ApiKeysPage from '@/pages/admin/ApiKeysPage'
 import ImportDataPage from '@/pages/admin/ImportDataPage'
@@ -89,6 +90,7 @@ export function AppRoutes() {
         <Route path="/admin/postcode-costs" element={<PostcodeCostsPage />} />
         <Route path="/admin/fbc-bands" element={<FbcBandsPage />} />
         <Route path="/admin/upgrades" element={<UpgradesPage />} />
+        <Route path="/admin/guideline-categories" element={<GuidelineCategoriesPage />} />
         <Route path="/admin/estate-guidelines" element={<EstateGuidelinesPage />} />
         <Route path="/admin/api-keys" element={<ApiKeysPage />} />
         <Route path="/admin/import-data" element={<ImportDataPage />} />
