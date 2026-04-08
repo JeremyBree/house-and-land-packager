@@ -109,6 +109,32 @@ async def lifespan(app: FastAPI):
             seed_dev(session)
             session.commit()
             logger.info("Dev seed complete")
+
+            # Auto-import pricing workbook if present (idempotent — skips existing)
+            import glob
+
+            workbook_patterns = [
+                "/app/reference/*.xlsm",  # Docker container path
+                os.path.join(os.path.dirname(__file__), "..", "..", "..", "Reference", "*.xlsm"),  # Local dev
+            ]
+            for pattern in workbook_patterns:
+                matches = glob.glob(pattern)
+                if matches:
+                    from hlp.seeds.import_pricing_workbook import import_from_excel
+
+                    for wb_path in matches:
+                        logger.info("Auto-importing pricing workbook: %s", wb_path)
+                        result = import_from_excel(session, wb_path, "Hermitage Homes")
+                        session.commit()
+                        logger.info(
+                            "Pricing import complete: %d houses, %d facades, %d energy ratings, "
+                            "%d upgrades, %d groups, %d surcharges, %d guidelines, %d skipped, %d errors",
+                            result.houses_created, result.facades_created,
+                            result.energy_ratings_created, result.upgrades_created,
+                            result.wholesale_groups_created, result.travel_surcharges_created,
+                            result.estate_guidelines_created, result.skipped, len(result.errors),
+                        )
+                    break
         finally:
             session.close()
     except Exception as exc:
