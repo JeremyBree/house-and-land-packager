@@ -89,6 +89,24 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+def _apply_column_migrations(conn, inspector) -> None:
+    """Add missing columns to existing tables (PoC schema drift handler)."""
+    from sqlalchemy import text
+
+    # Define expected columns that may be missing on older deployments
+    # Format: (table_name, column_name, column_definition)
+    expected_columns = [
+        ("estate_stages", "pos_number", "VARCHAR(20)"),
+    ]
+
+    for table, column, col_def in expected_columns:
+        if table in inspector.get_table_names():
+            existing = {c["name"] for c in inspector.get_columns(table)}
+            if column not in existing:
+                logger.info("Adding missing column %s.%s", table, column)
+                conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {col_def}"))
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan: create tables and seed on startup if empty."""
@@ -97,7 +115,16 @@ async def lifespan(app: FastAPI):
         engine = get_engine()
         logger.info("Connecting to database and creating tables...")
         Base.metadata.create_all(engine)
-        logger.info("Database tables created/verified successfully (19 tables)")
+        logger.info("Database tables created/verified successfully")
+
+        # Apply any missing column migrations (PoC — handles schema drift)
+        from sqlalchemy import inspect, text
+
+        with engine.connect() as conn:
+            inspector = inspect(engine)
+            _apply_column_migrations(conn, inspector)
+            conn.commit()
+
         # Auto-seed on startup (idempotent for PoC — always run, seed_dev skips existing)
         from hlp.database import get_session_factory
 
