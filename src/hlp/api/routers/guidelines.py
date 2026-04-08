@@ -10,6 +10,7 @@ from hlp.api.schemas.guideline_schema import (
     EstateGuidelineCreate,
     EstateGuidelineRead,
     EstateGuidelineUpdate,
+    GuidelineCopyRequest,
     GuidelineTypeCreate,
     GuidelineTypeRead,
     GuidelineTypeUpdate,
@@ -89,6 +90,8 @@ def delete_guideline_type(
 def _guideline_to_read(g) -> EstateGuidelineRead:
     d = {c.key: getattr(g, c.key) for c in g.__table__.columns}
     d["guideline_type_name"] = g.guideline_type.short_name if g.guideline_type else None
+    d["default_price"] = float(g.guideline_type.default_price) if g.guideline_type and g.guideline_type.default_price else None
+    d["category_description"] = g.guideline_type.category_name if g.guideline_type else None
     return EstateGuidelineRead.model_validate(d)
 
 
@@ -120,6 +123,19 @@ def create_estate_guideline(
     db.commit()
     db.refresh(obj)
     return _guideline_to_read(obj)
+
+
+@router.post("/estate/copy", dependencies=[Depends(require_admin)])
+def copy_estate_guidelines(
+    payload: GuidelineCopyRequest,
+    db: Annotated[Session, Depends(get_db)],
+) -> dict:
+    count = guideline_repository.copy_guidelines(
+        db, payload.source_estate_id, payload.source_stage_id,
+        payload.target_estate_id, payload.target_stage_id,
+    )
+    db.commit()
+    return {"copied": count}
 
 
 @router.patch(

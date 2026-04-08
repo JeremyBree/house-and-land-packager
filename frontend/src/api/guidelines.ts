@@ -7,12 +7,20 @@ export interface GuidelineTypeRead {
   short_name: string
   description: string
   sort_order: number
+  category_code: string | null
+  category_name: string | null
+  notes: string | null
+  default_price: number
 }
 
 export interface GuidelineTypeInput {
   short_name: string
   description: string
   sort_order?: number
+  category_code?: string | null
+  category_name?: string | null
+  notes?: string | null
+  default_price?: number
 }
 
 export interface EstateGuidelineRead {
@@ -23,6 +31,8 @@ export interface EstateGuidelineRead {
   guideline_type_name: string | null
   cost: number | null
   override_text: string | null
+  default_price: number | null
+  category_description: string | null
 }
 
 export interface EstateGuidelineInput {
@@ -75,4 +85,14 @@ export async function updateEstateGuideline(id: number, input: Partial<EstateGui
 
 export async function deleteEstateGuideline(id: number): Promise<void> {
   await api.delete(`/api/guidelines/estate/${id}`)
+}
+
+export async function copyGuidelines(payload: {
+  source_estate_id: number
+  source_stage_id?: number | null
+  target_estate_id: number
+  target_stage_id?: number | null
+}): Promise<{ copied: number }> {
+  const { data } = await api.post<{ copied: number }>('/api/guidelines/estate/copy', payload)
+  return data
 }

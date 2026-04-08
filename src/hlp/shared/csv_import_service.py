@@ -606,12 +606,14 @@ def bulk_create_commission_rates(db: Session, rows: list[dict]) -> tuple[int, in
             skipped += 1
             continue
         try:
+            cf = row.get("commission_fixed")
+            cp = row.get("commission_pct")
             obj = CommissionRate(
                 bdm_profile_id=bdm_profile_id,
                 group_id=group_id,
                 brand=brand,
-                commission_fixed=row.get("commission_fixed"),
-                commission_pct=row.get("commission_pct"),
+                commission_fixed=float(cf) if cf is not None else None,
+                commission_pct=float(cp) if cp is not None else None,
             )
             db.add(obj)
             created += 1
@@ -661,7 +663,7 @@ def bulk_create_travel_surcharges(db: Session, rows: list[dict]) -> tuple[int, i
             obj = TravelSurcharge(
                 suburb_name=suburb_name,
                 postcode=row.get("postcode"),
-                surcharge_amount=row.get("surcharge_amount") or 0,
+                surcharge_amount=float(row.get("surcharge_amount") or 0),
                 region_name=row.get("region_name"),
             )
             db.add(obj)
@@ -707,7 +709,7 @@ def bulk_create_postcode_costs(db: Session, rows: list[dict]) -> tuple[int, int,
         try:
             obj = PostcodeSiteCost(
                 postcode=postcode,
-                rock_removal_cost=row.get("rock_removal_cost") or 0,
+                rock_removal_cost=float(row.get("rock_removal_cost") or 0),
             )
             db.add(obj)
             created += 1
@@ -868,6 +870,10 @@ def parse_guideline_types_csv(content: bytes) -> list[dict]:
             "short_name": _clean(_get(row, fm, "short_name")),
             "description": _clean(_get(row, fm, "description")),
             "sort_order": _int_val(_get(row, fm, "sort_order")),
+            "category_code": _clean(_get(row, fm, "category_code")),
+            "category_name": _clean(_get(row, fm, "category_name")),
+            "notes": _clean(_get(row, fm, "notes")),
+            "default_price": _dec(_get(row, fm, "default_price")),
         })
     return rows
 
@@ -895,6 +901,10 @@ def bulk_create_guideline_types(db: Session, rows: list[dict]) -> tuple[int, int
                 short_name=short_name,
                 description=row.get("description") or short_name,
                 sort_order=row.get("sort_order") or 0,
+                category_code=row.get("category_code") or short_name,
+                category_name=row.get("category_name"),
+                notes=row.get("notes"),
+                default_price=row.get("default_price") or 0,
             )
             db.add(obj)
             created += 1
@@ -996,7 +1006,7 @@ def bulk_create_estate_guidelines(db: Session, rows: list[dict]) -> tuple[int, i
                 estate_id=estate_id,
                 stage_id=stage_id,
                 type_id=type_id,
-                cost=row.get("cost"),
+                cost=float(row["cost"]) if row.get("cost") is not None else None,
                 override_text=row.get("override_text"),
             )
             db.add(obj)

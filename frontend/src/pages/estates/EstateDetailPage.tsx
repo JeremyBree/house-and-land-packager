@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Download, Edit, FileText, Plus, Trash2, Upload } from 'lucide-react'
+import { ArrowLeft, BookOpen, Download, Edit, FileText, Plus, Trash2, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -277,6 +277,20 @@ export default function EstateDetailPage() {
               </ul>
             )}
           </CardContent>
+        </Card>
+
+        <Card className="md:col-span-2">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <BookOpen className="h-5 w-5" />
+                Design Guidelines
+              </CardTitle>
+              <Link to={`/admin/estate-guidelines?estate_id=${estateId}`}>
+                <Button variant="outline" size="sm">Manage Guidelines</Button>
+              </Link>
+            </div>
+          </CardHeader>
         </Card>
       </div>
 

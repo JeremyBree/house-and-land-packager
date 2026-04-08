@@ -9,12 +9,20 @@ class GuidelineTypeCreate(BaseModel):
     short_name: str = Field(min_length=1, max_length=100)
     description: str = Field(min_length=1)
     sort_order: int = 0
+    category_code: str | None = None
+    category_name: str | None = None
+    notes: str | None = None
+    default_price: float = 0
 
 
 class GuidelineTypeUpdate(BaseModel):
     short_name: str | None = Field(default=None, min_length=1, max_length=100)
     description: str | None = Field(default=None, min_length=1)
     sort_order: int | None = None
+    category_code: str | None = None
+    category_name: str | None = None
+    notes: str | None = None
+    default_price: float | None = None
 
 
 class GuidelineTypeRead(BaseModel):
@@ -24,6 +32,10 @@ class GuidelineTypeRead(BaseModel):
     short_name: str
     description: str
     sort_order: int
+    category_code: str | None = None
+    category_name: str | None = None
+    notes: str | None = None
+    default_price: float = 0
 
 
 # ---- EstateDesignGuideline ---------------------------------------------------
@@ -54,3 +66,12 @@ class EstateGuidelineRead(BaseModel):
     guideline_type_name: str | None = None
     cost: float | None = None
     override_text: str | None = None
+    default_price: float | None = None
+    category_description: str | None = None
+
+
+class GuidelineCopyRequest(BaseModel):
+    source_estate_id: int
+    source_stage_id: int | None = None
+    target_estate_id: int
+    target_stage_id: int | None = None

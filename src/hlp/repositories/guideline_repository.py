@@ -110,3 +110,32 @@ def delete_estate_guideline(db: Session, guideline_id: int) -> None:
         raise NotFoundError(f"EstateDesignGuideline {guideline_id} not found")
     db.delete(obj)
     db.flush()
+
+
+def copy_guidelines(
+    db: Session, source_estate_id: int, source_stage_id: int | None,
+    target_estate_id: int, target_stage_id: int | None,
+) -> int:
+    """Copy guidelines from one estate/stage to another. Returns count copied."""
+    sources = list_estate_guidelines(db, source_estate_id, source_stage_id)
+    # Build set of existing (type_id,) for target
+    existing_targets = set()
+    target_guidelines = list_estate_guidelines(db, target_estate_id, target_stage_id)
+    for g in target_guidelines:
+        existing_targets.add(g.type_id)
+
+    copied = 0
+    for g in sources:
+        if g.type_id in existing_targets:
+            continue
+        new_g = EstateDesignGuideline(
+            estate_id=target_estate_id,
+            stage_id=target_stage_id,
+            type_id=g.type_id,
+            cost=g.cost,
+            override_text=g.override_text,
+        )
+        db.add(new_g)
+        copied += 1
+    db.flush()
+    return copied

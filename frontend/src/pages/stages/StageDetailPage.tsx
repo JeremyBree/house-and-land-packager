@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { ColumnDef } from '@tanstack/react-table'
 import {
   ArrowLeft,
+  BookOpen,
   Edit,
   History,
   MoreHorizontal,
@@ -286,16 +287,23 @@ export default function StageDetailPage() {
             )}
           </div>
         </div>
-        {isAdmin && (
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => setShowEditStage(true)}>
-              <Edit className="h-4 w-4" /> Edit
+        <div className="flex items-center gap-2">
+          <Link to={`/admin/estate-guidelines?estate_id=${estateId}&stage_id=${stageId}`}>
+            <Button variant="outline" size="sm">
+              <BookOpen className="h-4 w-4" /> Guidelines
             </Button>
-            <Button variant="destructive" onClick={() => setShowDeleteStage(true)}>
-              <Trash2 className="h-4 w-4" /> Delete
-            </Button>
-          </div>
-        )}
+          </Link>
+          {isAdmin && (
+            <>
+              <Button variant="outline" onClick={() => setShowEditStage(true)}>
+                <Edit className="h-4 w-4" /> Edit
+              </Button>
+              <Button variant="destructive" onClick={() => setShowDeleteStage(true)}>
+                <Trash2 className="h-4 w-4" /> Delete
+              </Button>
+            </>
+          )}
+        </div>
       </div>
 
       <Card className="mb-6">

@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { MoreHorizontal, Plus } from 'lucide-react'
+import { Copy, MoreHorizontal, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -41,6 +42,7 @@ import {
   createEstateGuideline,
   updateEstateGuideline,
   deleteEstateGuideline,
+  copyGuidelines,
 } from '@/api/guidelines'
 import type { GuidelineTypeRead, EstateGuidelineRead } from '@/api/guidelines'
 import { listEstates } from '@/api/estates'
@@ -53,7 +55,11 @@ import { extractErrorMessage } from '@/api/client'
 
 const typeSchema = z.object({
   short_name: z.string().min(1).max(100),
-  description: z.string().min(1),
+  category_code: z.string().max(20).optional().or(z.literal('')),
+  category_name: z.string().max(200).optional().or(z.literal('')),
+  description: z.string().optional().or(z.literal('')),
+  notes: z.string().optional().or(z.literal('')),
+  default_price: z.coerce.number().default(0),
   sort_order: z.coerce.number().int().default(0),
 })
 type TypeValues = z.infer<typeof typeSchema>
@@ -67,13 +73,31 @@ const guidelineSchema = z.object({
 })
 type GuidelineValues = z.infer<typeof guidelineSchema>
 
+// ---- Copy schema ------------------------------------------------------------
+
+const copySchema = z.object({
+  target_estate_id: z.coerce.number().int().min(1, 'Required'),
+  target_stage_id: z.coerce.number().int().optional().or(z.literal('')),
+})
+type CopyValues = z.infer<typeof copySchema>
+
+function formatPrice(value: number | null | undefined): string {
+  if (value === null || value === undefined) return ''
+  return `$${Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+}
+
 export default function EstateGuidelinesPage() {
   const queryClient = useQueryClient()
   const { toast } = useToast()
+  const [searchParams] = useSearchParams()
 
   // ---- Estate / Stage selection ---------------------------------------------
-  const [selectedEstateId, setSelectedEstateId] = useState<number | null>(null)
-  const [selectedStageId, setSelectedStageId] = useState<number | null>(null)
+  const [selectedEstateId, setSelectedEstateId] = useState<number | ''>(
+    searchParams.get('estate_id') ? Number(searchParams.get('estate_id')) : ''
+  )
+  const [selectedStageId, setSelectedStageId] = useState<number | ''>(
+    searchParams.get('stage_id') ? Number(searchParams.get('stage_id')) : ''
+  )
 
   // ---- Type state -----------------------------------------------------------
   const [typeFormOpen, setTypeFormOpen] = useState(false)
@@ -84,6 +108,9 @@ export default function EstateGuidelinesPage() {
   const [glFormOpen, setGlFormOpen] = useState(false)
   const [editingGl, setEditingGl] = useState<EstateGuidelineRead | null>(null)
   const [deleteGlTarget, setDeleteGlTarget] = useState<EstateGuidelineRead | null>(null)
+
+  // ---- Copy state -----------------------------------------------------------
+  const [copyDialogOpen, setCopyDialogOpen] = useState(false)
 
   // ---- Queries --------------------------------------------------------------
   const { data: typesData, isLoading: typesLoading } = useQuery({
@@ -99,32 +126,54 @@ export default function EstateGuidelinesPage() {
 
   const { data: stages } = useQuery({
     queryKey: ['stages', selectedEstateId],
-    queryFn: () => listStages(selectedEstateId!),
-    enabled: selectedEstateId !== null,
+    queryFn: () => listStages(selectedEstateId as number),
+    enabled: selectedEstateId !== '',
   })
 
   const { data: guidelines, isLoading: glLoading } = useQuery({
     queryKey: ['estate-guidelines', selectedEstateId, selectedStageId],
-    queryFn: () => listEstateGuidelines(selectedEstateId!, selectedStageId),
-    enabled: selectedEstateId !== null,
+    queryFn: () =>
+      listEstateGuidelines(
+        selectedEstateId as number,
+        selectedStageId !== '' ? (selectedStageId as number) : null,
+      ),
+    enabled: selectedEstateId !== '',
   })
 
-  // Reset stage when estate changes
+  // Reset stage when estate changes (but not on initial mount from URL params)
+  const [initialMount, setInitialMount] = useState(true)
   useEffect(() => {
-    setSelectedStageId(null)
+    if (initialMount) {
+      setInitialMount(false)
+      return
+    }
+    setSelectedStageId('')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedEstateId])
+
+  // ---- Copy form targets: separate estate/stage queries ---------------------
+  const [copyTargetEstateId, setCopyTargetEstateId] = useState<number | ''>('' )
+  const { data: copyTargetStages } = useQuery({
+    queryKey: ['stages', copyTargetEstateId],
+    queryFn: () => listStages(copyTargetEstateId as number),
+    enabled: copyTargetEstateId !== '',
+  })
 
   // ---- Type form ------------------------------------------------------------
   const typeForm = useForm<TypeValues>({
     resolver: zodResolver(typeSchema),
-    defaultValues: { short_name: '', description: '', sort_order: 0 },
+    defaultValues: { short_name: '', category_code: '', category_name: '', description: '', notes: '', default_price: 0, sort_order: 0 },
   })
 
   useEffect(() => {
     if (typeFormOpen) {
       typeForm.reset({
         short_name: editingType?.short_name ?? '',
+        category_code: editingType?.category_code ?? '',
+        category_name: editingType?.category_name ?? '',
         description: editingType?.description ?? '',
+        notes: editingType?.notes ?? '',
+        default_price: editingType?.default_price ?? 0,
         sort_order: editingType?.sort_order ?? 0,
       })
     }
@@ -132,11 +181,21 @@ export default function EstateGuidelinesPage() {
 
   const saveType = useMutation({
     mutationFn: async (values: TypeValues) => {
-      if (editingType) return updateGuidelineType(editingType.type_id, values)
-      return createGuidelineType(values)
+      const payload = {
+        short_name: values.short_name,
+        category_code: values.category_code || null,
+        category_name: values.category_name || null,
+        description: values.description || '',
+        notes: values.notes || null,
+        default_price: values.default_price,
+        sort_order: values.sort_order,
+      }
+      if (editingType) return updateGuidelineType(editingType.type_id, payload)
+      return createGuidelineType(payload)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['guideline-types'] })
+      queryClient.invalidateQueries({ queryKey: ['estate-guidelines'] })
       toast({ title: editingType ? 'Type updated' : 'Type created', variant: 'success' })
       setTypeFormOpen(false)
     },
@@ -173,8 +232,8 @@ export default function EstateGuidelinesPage() {
   const saveGl = useMutation({
     mutationFn: async (values: GuidelineValues) => {
       const payload = {
-        estate_id: selectedEstateId!,
-        stage_id: selectedStageId ?? null,
+        estate_id: selectedEstateId as number,
+        stage_id: selectedStageId !== '' ? (selectedStageId as number) : null,
         type_id: values.type_id,
         cost: values.cost !== '' && values.cost !== undefined ? Number(values.cost) : null,
         override_text: values.override_text || null,
@@ -200,6 +259,36 @@ export default function EstateGuidelinesPage() {
     onError: (err) => toast({ title: 'Error', description: extractErrorMessage(err), variant: 'destructive' }),
   })
 
+  // ---- Copy mutation --------------------------------------------------------
+  const copyForm = useForm<CopyValues>({
+    resolver: zodResolver(copySchema),
+    defaultValues: { target_estate_id: '' as unknown as number, target_stage_id: '' },
+  })
+
+  useEffect(() => {
+    if (copyDialogOpen) {
+      copyForm.reset({ target_estate_id: '' as unknown as number, target_stage_id: '' })
+      setCopyTargetEstateId('')
+    }
+  }, [copyDialogOpen, copyForm])
+
+  const copyMutation = useMutation({
+    mutationFn: async (values: CopyValues) => {
+      return copyGuidelines({
+        source_estate_id: selectedEstateId as number,
+        source_stage_id: selectedStageId !== '' ? (selectedStageId as number) : null,
+        target_estate_id: values.target_estate_id,
+        target_stage_id: values.target_stage_id !== '' && values.target_stage_id !== undefined ? Number(values.target_stage_id) : null,
+      })
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['estate-guidelines'] })
+      toast({ title: `Copied ${result.copied} guideline(s)`, variant: 'success' })
+      setCopyDialogOpen(false)
+    },
+    onError: (err) => toast({ title: 'Error', description: extractErrorMessage(err), variant: 'destructive' }),
+  })
+
   // ---- Helpers --------------------------------------------------------------
   const openNewType = () => { setEditingType(null); setTypeFormOpen(true) }
   const openEditType = (t: GuidelineTypeRead) => { setEditingType(t); setTypeFormOpen(true) }
@@ -209,8 +298,8 @@ export default function EstateGuidelinesPage() {
   return (
     <div>
       <PageHeader
-        title="Estate Guidelines"
-        description="Manage guideline types and per-estate design guideline overrides."
+        title="Design Guidelines"
+        description="Manage guideline categories and per-estate design guideline overrides."
         actions={
           <div className="flex gap-2">
             <CsvImportButton endpoint="/api/guidelines/types/upload-csv" label="Import Types" onSuccess={() => queryClient.invalidateQueries({ queryKey: ['guideline-types'] })} />
@@ -219,19 +308,21 @@ export default function EstateGuidelinesPage() {
         }
       />
 
-      {/* ---- Guideline Types ---- */}
+      {/* ---- Section 1: Guideline Categories ---- */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-2">
-          <h2 className="text-lg font-semibold">Guideline Types</h2>
+          <h2 className="text-lg font-semibold">Guideline Categories</h2>
           <Button size="sm" onClick={openNewType}>
-            <Plus className="h-4 w-4" /> New Type
+            <Plus className="h-4 w-4" /> New Category
           </Button>
         </div>
         <div className="rounded-lg border bg-card">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Short Name</TableHead>
+                <TableHead>Category Code</TableHead>
+                <TableHead>Category Name</TableHead>
+                <TableHead className="w-32">Default Price ($)</TableHead>
                 <TableHead>Description</TableHead>
                 <TableHead className="w-24">Sort Order</TableHead>
                 <TableHead className="w-16"></TableHead>
@@ -240,17 +331,19 @@ export default function EstateGuidelinesPage() {
             <TableBody>
               {typesLoading ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">Loading...</TableCell>
+                  <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">Loading...</TableCell>
                 </TableRow>
               ) : typesData?.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">No guideline types yet.</TableCell>
+                  <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">No guideline categories yet.</TableCell>
                 </TableRow>
               ) : (
                 typesData?.map((t) => (
                   <TableRow key={t.type_id}>
-                    <TableCell className="font-medium">{t.short_name}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{t.description}</TableCell>
+                    <TableCell className="font-medium">{t.category_code ?? '—'}</TableCell>
+                    <TableCell>{t.category_name ?? t.short_name}</TableCell>
+                    <TableCell>{formatPrice(t.default_price)}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground max-w-xs truncate">{t.description || '—'}</TableCell>
                     <TableCell>{t.sort_order}</TableCell>
                     <TableCell>
                       <DropdownMenu>
@@ -278,20 +371,30 @@ export default function EstateGuidelinesPage() {
         </div>
       </div>
 
-      {/* ---- Estate Guidelines ---- */}
+      {/* ---- Section 2: Estate Design Guidelines ---- */}
       <div>
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-lg font-semibold">Estate Design Guidelines</h2>
-          <Button size="sm" onClick={openNewGl} disabled={selectedEstateId === null}>
-            <Plus className="h-4 w-4" /> New Guideline
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setCopyDialogOpen(true)}
+              disabled={selectedEstateId === ''}
+            >
+              <Copy className="h-4 w-4" /> Copy Guidelines
+            </Button>
+            <Button size="sm" onClick={openNewGl} disabled={selectedEstateId === ''}>
+              <Plus className="h-4 w-4" /> New Guideline
+            </Button>
+          </div>
         </div>
 
         {/* Filters */}
         <div className="flex gap-4 mb-4">
           <Select
-            value={selectedEstateId !== null ? String(selectedEstateId) : '__none__'}
-            onValueChange={(v) => setSelectedEstateId(v === '__none__' ? null : Number(v))}
+            value={selectedEstateId !== '' ? String(selectedEstateId) : '__none__'}
+            onValueChange={(v) => setSelectedEstateId(v === '__none__' ? '' : Number(v))}
           >
             <SelectTrigger className="w-[280px]">
               <SelectValue placeholder="Select estate..." />
@@ -305,9 +408,9 @@ export default function EstateGuidelinesPage() {
           </Select>
 
           <Select
-            value={selectedStageId !== null ? String(selectedStageId) : '__none__'}
-            onValueChange={(v) => setSelectedStageId(v === '__none__' ? null : Number(v))}
-            disabled={selectedEstateId === null}
+            value={selectedStageId !== '' ? String(selectedStageId) : '__none__'}
+            onValueChange={(v) => setSelectedStageId(v === '__none__' ? '' : Number(v))}
+            disabled={selectedEstateId === ''}
           >
             <SelectTrigger className="w-[220px]">
               <SelectValue placeholder="All stages" />
@@ -325,55 +428,66 @@ export default function EstateGuidelinesPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Guideline Type</TableHead>
-                <TableHead className="w-32">Cost</TableHead>
-                <TableHead>Override Text</TableHead>
+                <TableHead>Category Name</TableHead>
+                <TableHead className="w-36">Default Price</TableHead>
+                <TableHead className="w-36">Override Price</TableHead>
+                <TableHead>Override Description</TableHead>
                 <TableHead className="w-16"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {selectedEstateId === null ? (
+              {selectedEstateId === '' ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">Select an estate to view guidelines.</TableCell>
+                  <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">Select an estate to view guidelines.</TableCell>
                 </TableRow>
               ) : glLoading ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">Loading...</TableCell>
+                  <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">Loading...</TableCell>
                 </TableRow>
               ) : guidelines?.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">No guidelines for this estate.</TableCell>
+                  <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">No guidelines for this estate.</TableCell>
                 </TableRow>
               ) : (
-                guidelines?.map((g) => (
-                  <TableRow key={g.guideline_id}>
-                    <TableCell className="font-medium">{g.guideline_type_name ?? `Type #${g.type_id}`}</TableCell>
-                    <TableCell>
-                      {g.cost !== null && g.cost !== undefined
-                        ? `$${Number(g.cost).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                        : '—'}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{g.override_text ?? '—'}</TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openEditGl(g)}>Edit</DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => setDeleteGlTarget(g)}
-                          >
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))
+                guidelines?.map((g) => {
+                  const hasOverridePrice = g.cost !== null && g.cost !== undefined
+                  return (
+                    <TableRow key={g.guideline_id}>
+                      <TableCell className="font-medium">{g.guideline_type_name ?? `Type #${g.type_id}`}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {g.default_price !== null && g.default_price !== undefined
+                          ? formatPrice(g.default_price)
+                          : '—'}
+                      </TableCell>
+                      <TableCell>
+                        {hasOverridePrice
+                          ? formatPrice(g.cost)
+                          : g.default_price !== null && g.default_price !== undefined
+                            ? <span className="text-muted-foreground">{formatPrice(g.default_price)}</span>
+                            : '—'}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{g.override_text ?? '—'}</TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => openEditGl(g)}>Edit</DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={() => setDeleteGlTarget(g)}
+                            >
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })
               )}
             </TableBody>
           </Table>
@@ -384,7 +498,7 @@ export default function EstateGuidelinesPage() {
       <Dialog open={typeFormOpen} onOpenChange={setTypeFormOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>{editingType ? 'Edit guideline type' : 'New guideline type'}</DialogTitle>
+            <DialogTitle>{editingType ? 'Edit guideline category' : 'New guideline category'}</DialogTitle>
           </DialogHeader>
           <Form {...typeForm}>
             <form onSubmit={typeForm.handleSubmit((v) => saveType.mutate(v))} className="space-y-4">
@@ -401,11 +515,55 @@ export default function EstateGuidelinesPage() {
               />
               <FormField
                 control={typeForm.control}
+                name="category_code"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Category Code</FormLabel>
+                    <FormControl><Input {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={typeForm.control}
+                name="category_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Category Name</FormLabel>
+                    <FormControl><Input {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={typeForm.control}
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Description *</FormLabel>
+                    <FormLabel>Description</FormLabel>
                     <FormControl><Textarea {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={typeForm.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Notes</FormLabel>
+                    <FormControl><Textarea {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={typeForm.control}
+                name="default_price"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Default Price</FormLabel>
+                    <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -470,7 +628,7 @@ export default function EstateGuidelinesPage() {
                 name="cost"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Cost</FormLabel>
+                    <FormLabel>Override Price</FormLabel>
                     <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
@@ -481,7 +639,7 @@ export default function EstateGuidelinesPage() {
                 name="override_text"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Override Text</FormLabel>
+                    <FormLabel>Override Description</FormLabel>
                     <FormControl><Textarea {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
@@ -498,11 +656,93 @@ export default function EstateGuidelinesPage() {
         </DialogContent>
       </Dialog>
 
+      {/* ---- Copy dialog ---- */}
+      <Dialog open={copyDialogOpen} onOpenChange={setCopyDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Copy Guidelines</DialogTitle>
+          </DialogHeader>
+          <Form {...copyForm}>
+            <form
+              onSubmit={copyForm.handleSubmit((v) => copyMutation.mutate(v))}
+              className="space-y-4"
+            >
+              <div className="text-sm text-muted-foreground">
+                Copy all guidelines from the currently selected estate
+                {selectedStageId !== '' ? ' and stage' : ''} to a target estate/stage.
+              </div>
+              <FormField
+                control={copyForm.control}
+                name="target_estate_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Target Estate *</FormLabel>
+                    <Select
+                      onValueChange={(v) => {
+                        field.onChange(Number(v))
+                        setCopyTargetEstateId(Number(v))
+                        copyForm.setValue('target_stage_id', '')
+                      }}
+                      value={field.value ? String(field.value) : ''}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select estate..." />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {estates.map((e) => (
+                          <SelectItem key={e.estate_id} value={String(e.estate_id)}>{e.estate_name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={copyForm.control}
+                name="target_stage_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Target Stage (optional)</FormLabel>
+                    <Select
+                      onValueChange={(v) => field.onChange(v === '__none__' ? '' : Number(v))}
+                      value={field.value ? String(field.value) : '__none__'}
+                      disabled={copyTargetEstateId === ''}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="All stages" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="__none__">-- No stage --</SelectItem>
+                        {copyTargetStages?.map((s: StageRead) => (
+                          <SelectItem key={s.stage_id} value={String(s.stage_id)}>{s.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setCopyDialogOpen(false)}>Cancel</Button>
+                <Button type="submit" disabled={copyMutation.isPending}>
+                  {copyMutation.isPending ? 'Copying...' : 'Copy'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
       {/* ---- Confirm dialogs ---- */}
       <ConfirmDialog
         open={!!deleteTypeTarget}
         onOpenChange={(o) => !o && setDeleteTypeTarget(null)}
-        title="Delete guideline type?"
+        title="Delete guideline category?"
         description={deleteTypeTarget ? `"${deleteTypeTarget.short_name}" will be permanently removed.` : undefined}
         confirmLabel="Delete"
         variant="destructive"

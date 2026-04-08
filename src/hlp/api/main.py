@@ -97,6 +97,10 @@ def _apply_column_migrations(conn, inspector) -> None:
     # Format: (table_name, column_name, column_definition)
     expected_columns = [
         ("estate_stages", "pos_number", "VARCHAR(20)"),
+        ("guideline_types", "category_code", "VARCHAR(100)"),
+        ("guideline_types", "category_name", "VARCHAR(200)"),
+        ("guideline_types", "notes", "TEXT"),
+        ("guideline_types", "default_price", "NUMERIC(10,2) DEFAULT 0 NOT NULL"),
     ]
 
     for table, column, col_def in expected_columns:

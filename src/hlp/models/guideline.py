@@ -13,6 +13,10 @@ class GuidelineType(Base):
     short_name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    category_code: Mapped[str | None] = mapped_column(String(100))
+    category_name: Mapped[str | None] = mapped_column(String(200))
+    notes: Mapped[str | None] = mapped_column(Text)
+    default_price: Mapped[float] = mapped_column(Numeric(10, 2), default=0, nullable=False)
 
 
 class EstateDesignGuideline(Base):

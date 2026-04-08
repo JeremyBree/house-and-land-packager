@@ -1,29 +1,29 @@
-short_name,description,sort_order
-recycled_water,"Provide 3rd pipe recycled water including connections to all Toilets, Washing Machine tap and 1No. Garden tap.",1
-fibre_optic,Fibre optic - $600,2
-eaves_1500,"Provide 450mm wide eaves to the front Façade, returning 1500mm down both sides of house (excluding walls on boundary).",3
-eaves_3000,"Provide 450mm wide eaves to the front Façade, returning 3000mm down both sides of house (excluding walls on boundary).",4
-water_tank_2000_garden,Provide 1No. 2000 litre Slim Line Poly Water Tank including 1No. Garden tap.,5
-water_tank_2000_toilets,Provide 1No. 2000 litre Slim Line Poly Water Tank including plumbing and connections for up to 3No. Toilets.,6
+short_name,description,sort_order,category_code,category_name,notes,default_price
+recycled_water,"Provide 3rd pipe recycled water including connections to all Toilets, Washing Machine tap and 1No. Garden tap.",1,recycled_water,3rd Pipe Recycled Water,,0
+fibre_optic,Fibre optic - $600,2,fibre_optic,Fibre Optic,,0
+eaves_1500,"Provide 450mm wide eaves to the front Façade, returning 1500mm down both sides of house (excluding walls on boundary).",3,eaves_1500,Eaves 450mm (1500mm Projection),,0
+eaves_3000,"Provide 450mm wide eaves to the front Façade, returning 3000mm down both sides of house (excluding walls on boundary).",4,eaves_3000,Eaves 450mm (3000mm Projection),,0
+water_tank_2000_garden,Provide 1No. 2000 litre Slim Line Poly Water Tank including 1No. Garden tap.,5,water_tank_2000_garden,2000L Water Tank (Garden),,0
+water_tank_2000_toilets,Provide 1No. 2000 litre Slim Line Poly Water Tank including plumbing and connections for up to 3No. Toilets.,6,water_tank_2000_toilets,2000L Water Tank (Toilets),,0
 water_tank_5000_toilets,"Provide 1No. 5000 litre Slim Line Poly Water Tank including plumbing and connections for up to 3No. Toilets.
-Price includes a crane lift into the backyard.",7
-timber_fencing_additional,Provide approx. 1800mm high additional timber fencing. Includes wing fence and Gate.,8
-timber_fencing_capping,Provide approx. 1800mm high timber fencing with capping. Includes wing fence and Gate.,9
-colourbond_fencing,Provide approx. 1800mm high Colourbond fencing in lieu of timber palings. Includes wing fence and Gate. Colour to be .,10
-timber_fencing_exposed_125x125,Provide approx. 1800mm high timber fencing with capping and 125x125 exposed posts in lieu of timber palings. Includes wing fence and Gate.,11
-timber_fencing_exposed_125x75,Provide approx. 1800mm high timber fencing with capping and 125x75 exposed posts in lieu of timber palings. Includes wing fence and Gate.,12
-roof_pitch_25deg,Provide a 25 degree roof pitch in lieu of 22.5 degrees.,13
-colorbond_roofing,Provide Colorbond Roofing with 1No. Whirlybird and Sarking in lieu of category 1 roof tiles.,14
-flat_roof_tiles_cat3,Provide Category 3 Flat profile roof tiles in lieu of category 1 Shaped roof tiles.,15
-colour_through_concrete,"Provide colour through concrete Driveway, Path and Front Porch in lieu of colour on concrete.",16
-corner_treatment,"Provide a corner treatment, as per design guidelines, to the second street frontage.",17
-brickwork_above_garage,Provide category 1 brickwork above the Garage door in lieu of painted infill panel.,18
-brickwork_above_windows,Provide category 1 brickwork above all Windows & all Doors in lieu of painted infill panel.,19
-exposed_aggregate_concrete,"Provide exposed aggregate concrete Driveway, Path, Front Porch and Outdoor Living (if applicable) in lieu of colour on concrete.",20
-ceiling_2590mm,Provide 2590mm high ceilings to the ground floor.,21
-ceiling_2720mm,Provide 2720mm high ceilings to the ground floor.,22
-rendered_front_projection,Provide a Rendered finish to the front projection in lieu of face brickwork.,23
-rendered_whole_facade,Provide a Rendered finish to the whole front Façade in lieu of face brickwork.,24
-travel_surcharge,Travel surcharge.,25
-advanced_trees_landscaping,"Provide 2No. Advanced trees, additional shrubs and ground cover plants.",26
-single_crossover_footpath,Provide 1No. Single crossover and footpath to the primary street frontage.,27
+Price includes a crane lift into the backyard.",7,water_tank_5000_toilets,5000L Water Tank (Toilets),,0
+timber_fencing_additional,Provide approx. 1800mm high additional timber fencing. Includes wing fence and Gate.,8,timber_fencing_additional,Timber Fencing Additional,,0
+timber_fencing_capping,Provide approx. 1800mm high timber fencing with capping. Includes wing fence and Gate.,9,timber_fencing_capping,Timber Fencing Capping,,0
+colourbond_fencing,Provide approx. 1800mm high Colourbond fencing in lieu of timber palings. Includes wing fence and Gate. Colour to be .,10,colourbond_fencing,Colorbond Fencing,,0
+timber_fencing_exposed_125x125,Provide approx. 1800mm high timber fencing with capping and 125x125 exposed posts in lieu of timber palings. Includes wing fence and Gate.,11,timber_fencing_exposed_125x125,Timber Fencing Exposed 125x125,,0
+timber_fencing_exposed_125x75,Provide approx. 1800mm high timber fencing with capping and 125x75 exposed posts in lieu of timber palings. Includes wing fence and Gate.,12,timber_fencing_exposed_125x75,Timber Fencing Exposed 125x75,,0
+roof_pitch_25deg,Provide a 25 degree roof pitch in lieu of 22.5 degrees.,13,roof_pitch_25deg,Roof Pitch 25 Degrees,,0
+colorbond_roofing,Provide Colorbond Roofing with 1No. Whirlybird and Sarking in lieu of category 1 roof tiles.,14,colorbond_roofing,Colorbond Roofing,,0
+flat_roof_tiles_cat3,Provide Category 3 Flat profile roof tiles in lieu of category 1 Shaped roof tiles.,15,flat_roof_tiles_cat3,Flat Roof Tiles Cat 3,,0
+colour_through_concrete,"Provide colour through concrete Driveway, Path and Front Porch in lieu of colour on concrete.",16,colour_through_concrete,Colour Through Concrete,,0
+corner_treatment,"Provide a corner treatment, as per design guidelines, to the second street frontage.",17,corner_treatment,Corner Treatment,,0
+brickwork_above_garage,Provide category 1 brickwork above the Garage door in lieu of painted infill panel.,18,brickwork_above_garage,Brickwork Above Garage,,0
+brickwork_above_windows,Provide category 1 brickwork above all Windows & all Doors in lieu of painted infill panel.,19,brickwork_above_windows,Brickwork Above Windows,,0
+exposed_aggregate_concrete,"Provide exposed aggregate concrete Driveway, Path, Front Porch and Outdoor Living (if applicable) in lieu of colour on concrete.",20,exposed_aggregate_concrete,Exposed Aggregate Concrete,,0
+ceiling_2590mm,Provide 2590mm high ceilings to the ground floor.,21,ceiling_2590mm,Ceiling Height 2590mm,,0
+ceiling_2720mm,Provide 2720mm high ceilings to the ground floor.,22,ceiling_2720mm,Ceiling Height 2720mm,,0
+rendered_front_projection,Provide a Rendered finish to the front projection in lieu of face brickwork.,23,rendered_front_projection,Rendered Front Projection,,0
+rendered_whole_facade,Provide a Rendered finish to the whole front Façade in lieu of face brickwork.,24,rendered_whole_facade,Rendered Whole Facade,,0
+travel_surcharge,Travel surcharge.,25,travel_surcharge,Travel Surcharge,,0
+advanced_trees_landscaping,"Provide 2No. Advanced trees, additional shrubs and ground cover plants.",26,advanced_trees_landscaping,Advanced Trees & Landscaping,,0
+single_crossover_footpath,Provide 1No. Single crossover and footpath to the primary street frontage.,27,single_crossover_footpath,Single Crossover & Footpath,,0

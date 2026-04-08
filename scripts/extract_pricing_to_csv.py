@@ -129,6 +129,36 @@ _GUIDELINE_SHORT_NAMES = {
     36: "single_crossover_footpath",
 }
 
+_GUIDELINE_CATEGORY_NAMES = {
+    "recycled_water": "3rd Pipe Recycled Water",
+    "fibre_optic": "Fibre Optic",
+    "eaves_1500": "Eaves 450mm (1500mm Projection)",
+    "eaves_3000": "Eaves 450mm (3000mm Projection)",
+    "water_tank_2000_garden": "2000L Water Tank (Garden)",
+    "water_tank_2000_toilets": "2000L Water Tank (Toilets)",
+    "water_tank_5000_toilets": "5000L Water Tank (Toilets)",
+    "timber_fencing_additional": "Timber Fencing Additional",
+    "timber_fencing_capping": "Timber Fencing Capping",
+    "colourbond_fencing": "Colorbond Fencing",
+    "timber_fencing_exposed_125x125": "Timber Fencing Exposed 125x125",
+    "timber_fencing_exposed_125x75": "Timber Fencing Exposed 125x75",
+    "roof_pitch_25deg": "Roof Pitch 25 Degrees",
+    "colorbond_roofing": "Colorbond Roofing",
+    "flat_roof_tiles_cat3": "Flat Roof Tiles Cat 3",
+    "colour_through_concrete": "Colour Through Concrete",
+    "corner_treatment": "Corner Treatment",
+    "brickwork_above_garage": "Brickwork Above Garage",
+    "brickwork_above_windows": "Brickwork Above Windows",
+    "exposed_aggregate_concrete": "Exposed Aggregate Concrete",
+    "ceiling_2590mm": "Ceiling Height 2590mm",
+    "ceiling_2720mm": "Ceiling Height 2720mm",
+    "rendered_front_projection": "Rendered Front Projection",
+    "rendered_whole_facade": "Rendered Whole Facade",
+    "travel_surcharge": "Travel Surcharge",
+    "advanced_trees_landscaping": "Advanced Trees & Landscaping",
+    "single_crossover_footpath": "Single Crossover & Footpath",
+}
+
 _BDM_TABLE_COLS = [
     (3, 4, 5, 6),
     (8, 9, 10, 11),
@@ -591,11 +621,18 @@ def extract_site_cost_items(ws, out_dir: str) -> int:
 def extract_guideline_types(ws, out_dir: str) -> int:
     """Extract guideline_types.csv"""
     path = os.path.join(out_dir, "guideline_types.csv")
-    fh, writer = _open_csv(path, ["short_name", "description", "sort_order"])
+    fh, writer = _open_csv(path, [
+        "short_name", "description", "sort_order",
+        "category_code", "category_name", "notes", "default_price",
+    ])
     count = 0
     for col_idx, short_name in sorted(_GUIDELINE_SHORT_NAMES.items()):
         full_desc = _clean_str(_cell(ws, 10, col_idx)) or short_name
-        writer.writerow([short_name, full_desc, col_idx - 9])
+        category_name = _GUIDELINE_CATEGORY_NAMES.get(short_name, "")
+        writer.writerow([
+            short_name, full_desc, col_idx - 9,
+            short_name, category_name, "", "0",
+        ])
         count += 1
     fh.close()
     return count
