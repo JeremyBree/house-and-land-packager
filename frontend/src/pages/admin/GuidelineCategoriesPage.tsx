@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { MoreHorizontal, Plus } from 'lucide-react'
+import { ChevronDown, ChevronRight, MoreHorizontal, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -51,6 +51,17 @@ function formatPrice(value: number | null | undefined): string {
   return `$${Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
+/** Group types by category_code for hierarchical display. */
+function buildCodeGroups(types: GuidelineTypeRead[]): Map<string, GuidelineTypeRead[]> {
+  const map = new Map<string, GuidelineTypeRead[]>()
+  for (const t of types) {
+    const code = t.category_code || t.short_name
+    if (!map.has(code)) map.set(code, [])
+    map.get(code)!.push(t)
+  }
+  return map
+}
+
 export default function GuidelineCategoriesPage() {
   const queryClient = useQueryClient()
   const { toast } = useToast()
@@ -58,11 +69,14 @@ export default function GuidelineCategoriesPage() {
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<GuidelineTypeRead | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<GuidelineTypeRead | null>(null)
+  const [collapsedCodes, setCollapsedCodes] = useState<Set<string>>(new Set())
 
   const { data: types, isLoading } = useQuery({
     queryKey: ['guideline-types'],
     queryFn: () => listGuidelineTypes(),
   })
+
+  const codeGroups = useMemo(() => types ? buildCodeGroups(types) : new Map<string, GuidelineTypeRead[]>(), [types])
 
   const form = useForm<TypeValues>({
     resolver: zodResolver(typeSchema),
@@ -115,11 +129,20 @@ export default function GuidelineCategoriesPage() {
     onError: (err) => toast({ title: 'Error', description: extractErrorMessage(err), variant: 'destructive' }),
   })
 
+  const toggleCodeCollapse = (code: string) => {
+    setCollapsedCodes((prev) => {
+      const next = new Set(prev)
+      if (next.has(code)) next.delete(code)
+      else next.add(code)
+      return next
+    })
+  }
+
   return (
     <div>
       <PageHeader
         title="Guideline Categories"
-        description="Manage design guideline categories used across all estates."
+        description="Manage design guideline categories used across all estates. Categories are grouped by Code."
         actions={
           <div className="flex gap-2">
             <CsvImportButton endpoint="/api/guidelines/types/upload-csv" onSuccess={() => queryClient.invalidateQueries({ queryKey: ['guideline-types'] })} />
@@ -134,8 +157,7 @@ export default function GuidelineCategoriesPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Code</TableHead>
-              <TableHead>Category Name</TableHead>
+              <TableHead>Code / Category Name</TableHead>
               <TableHead className="text-right">Default Price</TableHead>
               <TableHead>Description</TableHead>
               <TableHead className="w-20">Order</TableHead>
@@ -145,35 +167,59 @@ export default function GuidelineCategoriesPage() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">Loading...</TableCell>
+                <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">Loading...</TableCell>
               </TableRow>
             ) : !types?.length ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">No categories yet.</TableCell>
+                <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">No categories yet.</TableCell>
               </TableRow>
             ) : (
-              types.map((t) => (
-                <TableRow key={t.type_id}>
-                  <TableCell className="font-mono text-sm">{t.category_code ?? t.short_name}</TableCell>
-                  <TableCell className="font-medium">{t.category_name ?? t.short_name}</TableCell>
-                  <TableCell className="text-right">{formatPrice(t.default_price)}</TableCell>
-                  <TableCell className="max-w-xs truncate text-sm text-muted-foreground">{t.description || '-'}</TableCell>
-                  <TableCell>{t.sort_order}</TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => { setEditing(t); setFormOpen(true) }}>Edit</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setDeleteTarget(t)}>Delete</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
+              [...codeGroups.entries()].map(([code, items]) => {
+                const hasMultiple = items.length > 1
+                const isCollapsed = collapsedCodes.has(code)
+
+                if (!hasMultiple) {
+                  // Single item — flat row
+                  const t = items[0]
+                  return (
+                    <TableRow key={t.type_id}>
+                      <TableCell>
+                        <div>
+                          <span className="font-mono text-xs text-muted-foreground mr-2">{code}</span>
+                          <span className="font-medium">{t.category_name ?? t.short_name}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">{formatPrice(t.default_price)}</TableCell>
+                      <TableCell className="max-w-xs truncate text-sm text-muted-foreground">{t.description || '-'}</TableCell>
+                      <TableCell>{t.sort_order}</TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => { setEditing(t); setFormOpen(true) }}>Edit</DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setDeleteTarget(t)}>Delete</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  )
+                }
+
+                // Multiple items — collapsible group
+                return (
+                  <CodeGroupRows
+                    key={code}
+                    code={code}
+                    items={items}
+                    isCollapsed={isCollapsed}
+                    onToggle={() => toggleCodeCollapse(code)}
+                    onEdit={(t) => { setEditing(t); setFormOpen(true) }}
+                    onDelete={(t) => setDeleteTarget(t)}
+                  />
+                )
+              })
             )}
           </TableBody>
         </Table>
@@ -232,5 +278,56 @@ export default function GuidelineCategoriesPage() {
         onConfirm={() => deleteTarget && remove.mutate(deleteTarget.type_id)}
       />
     </div>
+  )
+}
+
+/** Renders a collapsible code group with its child category rows. */
+function CodeGroupRows({
+  code,
+  items,
+  isCollapsed,
+  onToggle,
+  onEdit,
+  onDelete,
+}: {
+  code: string
+  items: GuidelineTypeRead[]
+  isCollapsed: boolean
+  onToggle: () => void
+  onEdit: (t: GuidelineTypeRead) => void
+  onDelete: (t: GuidelineTypeRead) => void
+}) {
+  return (
+    <>
+      <TableRow className="cursor-pointer hover:bg-muted/50" onClick={onToggle}>
+        <TableCell colSpan={5} className="font-semibold text-sm">
+          <div className="flex items-center gap-1">
+            {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            <span className="font-mono">{code}</span>
+            <span className="text-xs text-muted-foreground ml-1">({items.length} categories)</span>
+          </div>
+        </TableCell>
+      </TableRow>
+      {!isCollapsed &&
+        items.map((t) => (
+          <TableRow key={t.type_id} className="bg-muted/20">
+            <TableCell className="pl-10 font-medium">{t.category_name ?? t.short_name}</TableCell>
+            <TableCell className="text-right">{formatPrice(t.default_price)}</TableCell>
+            <TableCell className="max-w-xs truncate text-sm text-muted-foreground">{t.description || '-'}</TableCell>
+            <TableCell>{t.sort_order}</TableCell>
+            <TableCell>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => onEdit(t)}>Edit</DropdownMenuItem>
+                  <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDelete(t)}>Delete</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </TableCell>
+          </TableRow>
+        ))}
+    </>
   )
 }

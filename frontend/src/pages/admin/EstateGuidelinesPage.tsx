@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { ArrowLeft, Copy, MoreHorizontal, Plus } from 'lucide-react'
+import { ArrowLeft, ChevronDown, ChevronRight, Copy, MoreHorizontal, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -41,7 +41,7 @@ import {
   deleteEstateGuideline,
   copyGuidelines,
 } from '@/api/guidelines'
-import type { EstateGuidelineRead } from '@/api/guidelines'
+import type { EstateGuidelineRead, GuidelineTypeRead } from '@/api/guidelines'
 import { getEstate } from '@/api/estates'
 import { listEstates } from '@/api/estates'
 import { listStages } from '@/api/stages'
@@ -67,6 +67,28 @@ function formatPrice(value: number | null | undefined): string {
   return `$${Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
+/** Build a map of category_code -> GuidelineTypeRead[] for the hierarchical picker. */
+function buildCodeGroups(types: GuidelineTypeRead[]): Map<string, GuidelineTypeRead[]> {
+  const map = new Map<string, GuidelineTypeRead[]>()
+  for (const t of types) {
+    const code = t.category_code || t.short_name
+    if (!map.has(code)) map.set(code, [])
+    map.get(code)!.push(t)
+  }
+  return map
+}
+
+/** Group guidelines by category_code for table display. */
+function groupByCode(guidelines: EstateGuidelineRead[]): Map<string, EstateGuidelineRead[]> {
+  const map = new Map<string, EstateGuidelineRead[]>()
+  for (const g of guidelines) {
+    const code = g.category_code || g.guideline_type_name || `type-${g.type_id}`
+    if (!map.has(code)) map.set(code, [])
+    map.get(code)!.push(g)
+  }
+  return map
+}
+
 export default function EstateGuidelinesPage() {
   const queryClient = useQueryClient()
   const { toast } = useToast()
@@ -80,6 +102,12 @@ export default function EstateGuidelinesPage() {
   const [deleteGlTarget, setDeleteGlTarget] = useState<EstateGuidelineRead | null>(null)
   const [copyDialogOpen, setCopyDialogOpen] = useState(false)
   const [copyTargetEstateId, setCopyTargetEstateId] = useState<number | ''>('')
+
+  // Hierarchical picker state
+  const [selectedCode, setSelectedCode] = useState<string>('')
+
+  // Collapsed code groups in table
+  const [collapsedCodes, setCollapsedCodes] = useState<Set<string>>(new Set())
 
   // Fetch estate details for the header
   const { data: estate } = useQuery({
@@ -109,6 +137,19 @@ export default function EstateGuidelinesPage() {
     enabled: !!estateId,
   })
 
+  // Build code groups for the hierarchical picker
+  const codeGroups = useMemo(() => typesData ? buildCodeGroups(typesData) : new Map<string, GuidelineTypeRead[]>(), [typesData])
+  const sortedCodes = useMemo(() => [...codeGroups.keys()].sort(), [codeGroups])
+
+  // Get category names for the selected code
+  const categoryNamesForCode = useMemo(
+    () => (selectedCode ? codeGroups.get(selectedCode) || [] : []),
+    [selectedCode, codeGroups],
+  )
+
+  // Group guidelines by code for table display
+  const groupedGuidelines = useMemo(() => guidelines ? groupByCode(guidelines) : new Map(), [guidelines])
+
   // Copy dialog: estates and stages for target
   const { data: estatesData } = useQuery({
     queryKey: ['estates', { page: 1, size: 200 }],
@@ -134,8 +175,15 @@ export default function EstateGuidelinesPage() {
         cost: editingGl?.cost ?? '',
         override_text: editingGl?.override_text ?? '',
       })
+      // Set the code picker to match editing item
+      if (editingGl) {
+        const matchingType = typesData?.find((t) => t.type_id === editingGl.type_id)
+        setSelectedCode(matchingType?.category_code || matchingType?.short_name || '')
+      } else {
+        setSelectedCode('')
+      }
     }
-  }, [glFormOpen, editingGl, glForm])
+  }, [glFormOpen, editingGl, glForm, typesData])
 
   const saveGl = useMutation({
     mutationFn: async (values: GuidelineValues) => {
@@ -197,6 +245,15 @@ export default function EstateGuidelinesPage() {
     onError: (err) => toast({ title: 'Error', description: extractErrorMessage(err), variant: 'destructive' }),
   })
 
+  const toggleCodeCollapse = (code: string) => {
+    setCollapsedCodes((prev) => {
+      const next = new Set(prev)
+      if (next.has(code)) next.delete(code)
+      else next.add(code)
+      return next
+    })
+  }
+
   // No estate selected — show instructions
   if (!estateId) {
     return (
@@ -246,7 +303,7 @@ export default function EstateGuidelinesPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Category</TableHead>
+              <TableHead>Code / Category</TableHead>
               <TableHead className="text-right w-36">Default Price</TableHead>
               <TableHead className="text-right w-36">Override Price</TableHead>
               <TableHead>Override Description</TableHead>
@@ -263,34 +320,20 @@ export default function EstateGuidelinesPage() {
                 <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">No guidelines configured for this estate/stage yet.</TableCell>
               </TableRow>
             ) : (
-              guidelines.map((g) => {
-                const hasOverride = g.cost !== null && g.cost !== undefined
+              [...groupedGuidelines.entries()].map(([code, items]) => {
+                const isCollapsed = collapsedCodes.has(code)
+                const hasMultiple = items.length > 1
                 return (
-                  <TableRow key={g.guideline_id}>
-                    <TableCell className="font-medium">{g.guideline_type_name ?? `Type #${g.type_id}`}</TableCell>
-                    <TableCell className="text-right text-sm text-muted-foreground">
-                      {g.default_price != null ? formatPrice(g.default_price) : '-'}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {hasOverride ? (
-                        <span className="font-medium">{formatPrice(g.cost)}</span>
-                      ) : (
-                        <span className="text-muted-foreground">{g.default_price != null ? formatPrice(g.default_price) : '-'}</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground max-w-xs truncate">{g.override_text ?? '-'}</TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => { setEditingGl(g); setGlFormOpen(true) }}>Edit</DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setDeleteGlTarget(g)}>Remove</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
+                  <TableGroupRows
+                    key={code}
+                    code={code}
+                    items={items}
+                    isCollapsed={isCollapsed}
+                    hasMultiple={hasMultiple}
+                    onToggle={() => toggleCodeCollapse(code)}
+                    onEdit={(g) => { setEditingGl(g); setGlFormOpen(true) }}
+                    onDelete={(g) => setDeleteGlTarget(g)}
+                  />
                 )
               })
             )}
@@ -306,15 +349,47 @@ export default function EstateGuidelinesPage() {
           </DialogHeader>
           <Form {...glForm}>
             <form onSubmit={glForm.handleSubmit((v) => saveGl.mutate(v))} className="space-y-4">
+              {/* Step 1: Select Code */}
+              <FormItem>
+                <FormLabel>Code *</FormLabel>
+                <Select
+                  value={selectedCode}
+                  onValueChange={(v) => {
+                    setSelectedCode(v)
+                    // Clear type_id when code changes (unless single child)
+                    const children = codeGroups.get(v) || []
+                    if (children.length === 1) {
+                      glForm.setValue('type_id', children[0].type_id)
+                    } else {
+                      glForm.setValue('type_id', 0)
+                    }
+                  }}
+                >
+                  <FormControl>
+                    <SelectTrigger><SelectValue placeholder="Select code..." /></SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {sortedCodes.map((code) => (
+                      <SelectItem key={code} value={code}>{code}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormItem>
+
+              {/* Step 2: Select Category Name (filtered by code) */}
               <FormField control={glForm.control} name="type_id" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Guideline Category *</FormLabel>
-                  <Select onValueChange={(v) => field.onChange(Number(v))} value={field.value ? String(field.value) : ''}>
+                  <FormLabel>Category Name *</FormLabel>
+                  <Select
+                    onValueChange={(v) => field.onChange(Number(v))}
+                    value={field.value ? String(field.value) : ''}
+                    disabled={!selectedCode}
+                  >
                     <FormControl>
-                      <SelectTrigger><SelectValue placeholder="Select category..." /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder={selectedCode ? 'Select category...' : 'Select a code first'} /></SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {typesData?.map((t) => (
+                      {categoryNamesForCode.map((t) => (
                         <SelectItem key={t.type_id} value={String(t.type_id)}>
                           {t.category_name || t.short_name}{t.default_price ? ` ($${t.default_price})` : ''}
                         </SelectItem>
@@ -408,5 +483,111 @@ export default function EstateGuidelinesPage() {
         onConfirm={() => deleteGlTarget && removeGl.mutate(deleteGlTarget.guideline_id)}
       />
     </div>
+  )
+}
+
+/** Renders a code group header row + child rows for the grouped table. */
+function TableGroupRows({
+  code,
+  items,
+  isCollapsed,
+  hasMultiple,
+  onToggle,
+  onEdit,
+  onDelete,
+}: {
+  code: string
+  items: EstateGuidelineRead[]
+  isCollapsed: boolean
+  hasMultiple: boolean
+  onToggle: () => void
+  onEdit: (g: EstateGuidelineRead) => void
+  onDelete: (g: EstateGuidelineRead) => void
+}) {
+  // Single item under this code — render as a flat row
+  if (!hasMultiple) {
+    const g = items[0]
+    const hasOverride = g.cost !== null && g.cost !== undefined
+    return (
+      <TableRow>
+        <TableCell className="font-medium">
+          <span className="text-xs text-muted-foreground mr-2">{code}</span>
+          {g.category_description || g.guideline_type_name || `Type #${g.type_id}`}
+        </TableCell>
+        <TableCell className="text-right text-sm text-muted-foreground">
+          {g.default_price != null ? formatPrice(g.default_price) : '-'}
+        </TableCell>
+        <TableCell className="text-right">
+          {hasOverride ? (
+            <span className="font-medium">{formatPrice(g.cost)}</span>
+          ) : (
+            <span className="text-muted-foreground">{g.default_price != null ? formatPrice(g.default_price) : '-'}</span>
+          )}
+        </TableCell>
+        <TableCell className="text-sm text-muted-foreground max-w-xs truncate">{g.override_text ?? '-'}</TableCell>
+        <TableCell>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => onEdit(g)}>Edit</DropdownMenuItem>
+              <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDelete(g)}>Remove</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </TableCell>
+      </TableRow>
+    )
+  }
+
+  // Multiple items — render collapsible group
+  return (
+    <>
+      <TableRow
+        className="cursor-pointer hover:bg-muted/50"
+        onClick={onToggle}
+      >
+        <TableCell colSpan={5} className="font-semibold text-sm">
+          <div className="flex items-center gap-1">
+            {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            {code}
+            <span className="text-xs text-muted-foreground ml-1">({items.length})</span>
+          </div>
+        </TableCell>
+      </TableRow>
+      {!isCollapsed &&
+        items.map((g) => {
+          const hasOverride = g.cost !== null && g.cost !== undefined
+          return (
+            <TableRow key={g.guideline_id} className="bg-muted/20">
+              <TableCell className="pl-10 font-medium">
+                {g.category_description || g.guideline_type_name || `Type #${g.type_id}`}
+              </TableCell>
+              <TableCell className="text-right text-sm text-muted-foreground">
+                {g.default_price != null ? formatPrice(g.default_price) : '-'}
+              </TableCell>
+              <TableCell className="text-right">
+                {hasOverride ? (
+                  <span className="font-medium">{formatPrice(g.cost)}</span>
+                ) : (
+                  <span className="text-muted-foreground">{g.default_price != null ? formatPrice(g.default_price) : '-'}</span>
+                )}
+              </TableCell>
+              <TableCell className="text-sm text-muted-foreground max-w-xs truncate">{g.override_text ?? '-'}</TableCell>
+              <TableCell>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => onEdit(g)}>Edit</DropdownMenuItem>
+                    <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDelete(g)}>Remove</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </TableCell>
+            </TableRow>
+          )
+        })}
+    </>
   )
 }

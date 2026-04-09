@@ -1,6 +1,5 @@
 """FastAPI application factory."""
 
-import hashlib
 import logging
 import os
 import sys
@@ -14,6 +13,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 import hlp.models  # noqa: F401  # register all models on Base.metadata
+from hlp.api.middleware.site_auth import _PASSWORD_PAGE, SiteAuthMiddleware, _hash_password
 from hlp.api.routers import api_keys as api_keys_router
 from hlp.api.routers import auth as auth_router
 from hlp.api.routers import clash_rules as clash_rules_router
@@ -26,11 +26,9 @@ from hlp.api.routers import estates as estates_router
 from hlp.api.routers import external_ingestion as external_ingestion_router
 from hlp.api.routers import files as files_router
 from hlp.api.routers import filter_presets as filter_presets_router
+from hlp.api.routers import guidelines as guidelines_router
 from hlp.api.routers import house_designs as house_designs_router
 from hlp.api.routers import import_data as import_data_router
-from hlp.api.routers import pricing_reference as pricing_reference_router
-from hlp.api.routers import guidelines as guidelines_router
-from hlp.api.routers import upgrades as upgrades_router
 from hlp.api.routers import ingestion_logs as ingestion_logs_router
 from hlp.api.routers import lot_search as lot_search_router
 from hlp.api.routers import lots as lots_router
@@ -39,14 +37,15 @@ from hlp.api.routers import packages as packages_router
 from hlp.api.routers import pdf_ingestion as pdf_ingestion_router
 from hlp.api.routers import pricing_config as pricing_config_router
 from hlp.api.routers import pricing_engine as pricing_engine_router
+from hlp.api.routers import pricing_reference as pricing_reference_router
 from hlp.api.routers import pricing_requests as pricing_requests_router
 from hlp.api.routers import pricing_rules as pricing_rules_router
 from hlp.api.routers import pricing_templates as pricing_templates_router
 from hlp.api.routers import regions as regions_router
 from hlp.api.routers import stages as stages_router
+from hlp.api.routers import upgrades as upgrades_router
 from hlp.api.routers import users as users_router
 from hlp.api.routers import wholesale_groups_api as wholesale_groups_router
-from hlp.api.middleware.site_auth import SiteAuthMiddleware, _PASSWORD_PAGE, _hash_password
 from hlp.config import get_settings
 from hlp.database import Base, get_db, get_engine
 
@@ -122,7 +121,7 @@ async def lifespan(app: FastAPI):
         logger.info("Database tables created/verified successfully")
 
         # Apply any missing column migrations (PoC — handles schema drift)
-        from sqlalchemy import inspect, text
+        from sqlalchemy import inspect
 
         with engine.connect() as conn:
             inspector = inspect(engine)
@@ -265,6 +264,20 @@ def _register_exception_handlers(application: FastAPI) -> None:
     @application.exception_handler(HLPError)
     async def _hlp_err(_: Request, exc: HLPError):
         return _error_response(500, str(exc) or "Server error", "server_error")
+
+    from sqlalchemy.exc import IntegrityError, OperationalError
+
+    @application.exception_handler(IntegrityError)
+    async def _integrity_err(_: Request, exc: IntegrityError):
+        detail = str(exc.orig) if exc.orig else str(exc)
+        logger.error("Database integrity error: %s", detail)
+        return _error_response(409, f"Database constraint error: {detail}", "integrity_error")
+
+    @application.exception_handler(OperationalError)
+    async def _operational_err(_: Request, exc: OperationalError):
+        detail = str(exc.orig) if exc.orig else str(exc)
+        logger.error("Database operational error: %s", detail)
+        return _error_response(503, "Database connection error", "database_error")
 
 
 def create_app() -> FastAPI:

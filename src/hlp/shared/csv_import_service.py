@@ -11,6 +11,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from hlp.models.commission_rate import CommissionRate
+from hlp.models.developer import Developer
 from hlp.models.energy_rating import EnergyRating
 from hlp.models.estate import Estate
 from hlp.models.estate_stage import EstateStage
@@ -1011,6 +1012,96 @@ def bulk_create_estate_guidelines(db: Session, rows: list[dict]) -> tuple[int, i
             )
             db.add(obj)
             created += 1
+            if created % 500 == 0:
+                db.flush()
         except Exception as exc:
             errors.append({"row": r, "error": str(exc)})
     return created, skipped, errors
+
+
+# ---------------------------------------------------------------------------
+# 15. Estates & Stages
+# ---------------------------------------------------------------------------
+
+def parse_estates_stages_csv(content: bytes) -> list[dict]:
+    reader = _make_reader(content)
+    fm = _normalize_fields(reader)
+    rows = []
+    for i, row in enumerate(reader, start=2):
+        rows.append({
+            "_row": i,
+            "estate_name": _clean(_get(row, fm, "estate_name")),
+            "stage_name": _clean(_get(row, fm, "stage_name")),
+        })
+    return rows
+
+
+def bulk_create_estates_stages(db: Session, rows: list[dict]) -> tuple[int, int, int, list[dict]]:
+    """Create estates and stages from CSV rows.
+
+    Returns (estates_created, stages_created, skipped, errors).
+    """
+    estates_created = 0
+    stages_created = 0
+    skipped = 0
+    errors: list[dict] = []
+
+    # Get or create a default developer for seeded estates
+    default_dev = db.execute(
+        select(Developer).where(func.lower(Developer.developer_name) == "unknown")
+    ).scalar_one_or_none()
+    if default_dev is None:
+        default_dev = Developer(developer_name="Unknown", notes="Default developer for seeded estates")
+        db.add(default_dev)
+        db.flush()
+
+    estate_cache: dict[str, int] = {}
+
+    for row in rows:
+        r = row["_row"]
+        estate_name = row.get("estate_name")
+        if not estate_name:
+            errors.append({"row": r, "error": "estate_name is required"})
+            continue
+
+        # Resolve or create estate
+        ek = estate_name.lower()
+        if ek not in estate_cache:
+            estate = db.execute(
+                select(Estate).where(func.lower(Estate.estate_name) == ek)
+            ).scalar_one_or_none()
+            if estate is None:
+                estate = Estate(
+                    estate_name=estate_name,
+                    developer_id=default_dev.developer_id,
+                    active=True,
+                )
+                db.add(estate)
+                db.flush()
+                estates_created += 1
+            estate_cache[ek] = estate.estate_id
+
+        estate_id = estate_cache[ek]
+
+        # Create stage if provided
+        stage_name = row.get("stage_name")
+        if stage_name:
+            existing_stage = db.execute(
+                select(EstateStage).where(
+                    EstateStage.estate_id == estate_id,
+                    func.lower(EstateStage.name) == stage_name.lower(),
+                )
+            ).scalar_one_or_none()
+            if existing_stage:
+                skipped += 1
+                continue
+            try:
+                stage = EstateStage(estate_id=estate_id, name=stage_name)
+                db.add(stage)
+                stages_created += 1
+            except Exception as exc:
+                errors.append({"row": r, "error": str(exc)})
+        else:
+            skipped += 1
+
+    return estates_created, stages_created, skipped, errors

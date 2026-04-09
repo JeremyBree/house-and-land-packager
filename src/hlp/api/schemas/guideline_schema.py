@@ -2,7 +2,6 @@
 
 from pydantic import BaseModel, ConfigDict, Field
 
-
 # ---- GuidelineType -----------------------------------------------------------
 
 class GuidelineTypeCreate(BaseModel):
@@ -67,6 +66,7 @@ class EstateGuidelineRead(BaseModel):
     cost: float | None = None
     override_text: str | None = None
     default_price: float | None = None
+    category_code: str | None = None
     category_description: str | None = None
 
 

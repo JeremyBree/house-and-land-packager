@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from hlp.api.deps import get_db, require_admin
 from hlp.seeds.import_pricing_workbook import ImportResult, import_from_excel
+from hlp.shared import csv_import_service
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -89,3 +90,51 @@ def import_pricing_workbook(
         raise
     finally:
         Path(tmp_path).unlink(missing_ok=True)
+
+
+@router.post(
+    "/seed-estates-stages",
+    dependencies=[Depends(require_admin)],
+    summary="Seed estates and stages from server-side CSV",
+)
+def seed_estates_stages(db: Session = Depends(get_db)) -> dict:
+    """Load estates and stages from data/seed/estates_stages.csv."""
+    csv_path = Path(__file__).resolve().parents[4] / "data" / "seed" / "estates_stages.csv"
+    if not csv_path.exists():
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail=f"Seed file not found: {csv_path}")
+    content = csv_path.read_bytes()
+    parsed = csv_import_service.parse_estates_stages_csv(content)
+    estates_created, stages_created, skipped, errors = csv_import_service.bulk_create_estates_stages(db, parsed)
+    db.commit()
+    return {
+        "estates_created": estates_created,
+        "stages_created": stages_created,
+        "skipped": skipped,
+        "errors": errors[:50],
+    }
+
+
+@router.post(
+    "/seed-estate-guidelines",
+    dependencies=[Depends(require_admin)],
+    summary="Seed estate guidelines from server-side CSV",
+)
+def seed_estate_guidelines(db: Session = Depends(get_db)) -> dict:
+    """Load estate guidelines from data/seed/estate_guidelines.csv.
+
+    Estates, stages, and guideline types must already exist.
+    """
+    csv_path = Path(__file__).resolve().parents[4] / "data" / "seed" / "estate_guidelines.csv"
+    if not csv_path.exists():
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail=f"Seed file not found: {csv_path}")
+    content = csv_path.read_bytes()
+    parsed = csv_import_service.parse_estate_guidelines_csv(content)
+    created, skipped, errors = csv_import_service.bulk_create_estate_guidelines(db, parsed)
+    db.commit()
+    return {
+        "created": created,
+        "skipped": skipped,
+        "errors": errors[:50],
+    }

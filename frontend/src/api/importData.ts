@@ -32,3 +32,43 @@ export async function importPricingWorkbook(
   )
   return data
 }
+
+// ---- Bulk Seed ---------------------------------------------------------------
+
+export interface SeedEstatesResult {
+  estates_created: number
+  stages_created: number
+  skipped: number
+  errors: { row: number; error: string }[]
+}
+
+export interface SeedGuidelinesResult {
+  created: number
+  skipped: number
+  errors: { row: number; error: string }[]
+}
+
+export async function seedEstatesStages(): Promise<SeedEstatesResult> {
+  const { data } = await api.post<SeedEstatesResult>('/api/admin/seed-estates-stages')
+  return data
+}
+
+export async function seedEstateGuidelines(): Promise<SeedGuidelinesResult> {
+  const { data } = await api.post<SeedGuidelinesResult>(
+    '/api/admin/seed-estate-guidelines',
+    undefined,
+    { timeout: 300_000 },
+  )
+  return data
+}
+
+export async function uploadEstatesStagesCsv(file: File): Promise<SeedEstatesResult> {
+  const formData = new FormData()
+  formData.append('file', file)
+  const { data } = await api.post<SeedEstatesResult>(
+    '/api/estates/upload-csv',
+    formData,
+    { headers: { 'Content-Type': 'multipart/form-data' } },
+  )
+  return data
+}

@@ -32,6 +32,7 @@ export interface EstateGuidelineRead {
   cost: number | null
   override_text: string | null
   default_price: number | null
+  category_code: string | null
   category_description: string | null
 }
 

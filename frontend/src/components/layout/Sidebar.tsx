@@ -27,6 +27,7 @@ import {
   BookOpen,
   Tags,
   ListPlus,
+  DatabaseBackup,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
@@ -68,6 +69,7 @@ const adminNav: NavItem[] = [
   { to: '/admin/estate-guidelines', label: 'Estate Guidelines', icon: BookOpen },
   { to: '/admin/api-keys', label: 'API Keys', icon: KeyRound },
   { to: '/admin/configurations', label: 'Configurations', icon: Globe },
+  { to: '/admin/import-data', label: 'Import Data', icon: DatabaseBackup },
   { to: '/admin/ingestion-logs', label: 'Ingestion Logs', icon: ClipboardList },
 ]
 

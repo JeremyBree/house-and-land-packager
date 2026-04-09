@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, File, Query, UploadFile, status
 from sqlalchemy.orm import Session
 
 from hlp.api.deps import get_current_user, get_db, require_admin
+from hlp.api.schemas.common import CsvRowError, CsvUploadResult
 from hlp.api.schemas.guideline_schema import (
     EstateGuidelineCreate,
     EstateGuidelineRead,
@@ -15,7 +16,6 @@ from hlp.api.schemas.guideline_schema import (
     GuidelineTypeRead,
     GuidelineTypeUpdate,
 )
-from hlp.api.schemas.common import CsvRowError, CsvUploadResult
 from hlp.repositories import guideline_repository
 from hlp.shared import csv_import_service
 from hlp.shared.exceptions import NotFoundError
@@ -90,7 +90,9 @@ def delete_guideline_type(
 def _guideline_to_read(g) -> EstateGuidelineRead:
     d = {c.key: getattr(g, c.key) for c in g.__table__.columns}
     d["guideline_type_name"] = g.guideline_type.short_name if g.guideline_type else None
-    d["default_price"] = float(g.guideline_type.default_price) if g.guideline_type and g.guideline_type.default_price else None
+    gt = g.guideline_type
+    d["default_price"] = float(gt.default_price) if gt and gt.default_price else None
+    d["category_code"] = g.guideline_type.category_code if g.guideline_type else None
     d["category_description"] = g.guideline_type.category_name if g.guideline_type else None
     return EstateGuidelineRead.model_validate(d)
 

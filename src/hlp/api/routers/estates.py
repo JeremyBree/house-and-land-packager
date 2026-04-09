@@ -3,7 +3,7 @@
 import math
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, File, Query, UploadFile, status
 from sqlalchemy.orm import Session
 
 from hlp.api.deps import get_current_user, get_db, require_admin
@@ -15,6 +15,7 @@ from hlp.api.schemas.estate import (
     EstateUpdate,
 )
 from hlp.repositories import estate_repository
+from hlp.shared import csv_import_service
 from hlp.shared.exceptions import NotFoundError
 
 router = APIRouter(prefix="/api/estates", tags=["estates"])
@@ -51,6 +52,34 @@ def list_estates(
         size=size,
         pages=pages,
     )
+
+
+# ---- CSV Upload (must be before /{estate_id} routes) -------------------------
+
+
+@router.post(
+    "/upload-csv",
+    dependencies=[Depends(require_admin)],
+)
+async def upload_estates_stages_csv(
+    db: Annotated[Session, Depends(get_db)],
+    file: UploadFile = File(...),
+) -> dict:
+    content = await file.read()
+    parsed = csv_import_service.parse_estates_stages_csv(content)
+    estates_created, stages_created, skipped, errors = (
+        csv_import_service.bulk_create_estates_stages(db, parsed)
+    )
+    db.commit()
+    return {
+        "estates_created": estates_created,
+        "stages_created": stages_created,
+        "skipped": skipped,
+        "errors": [{"row": e["row"], "error": e["error"]} for e in errors[:50]],
+    }
+
+
+# ---- CRUD ---------------------------------------------------------------------
 
 
 @router.get(
