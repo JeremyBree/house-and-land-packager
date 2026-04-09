@@ -100,6 +100,14 @@ def _apply_column_migrations(conn, inspector) -> None:
         ("guideline_types", "category_name", "VARCHAR(200)"),
         ("guideline_types", "notes", "TEXT"),
         ("guideline_types", "default_price", "NUMERIC(10,2) DEFAULT 0 NOT NULL"),
+        ("house_packages", "design_id", "INTEGER REFERENCES house_designs(design_id)"),
+        ("house_packages", "facade_id", "INTEGER REFERENCES house_facades(facade_id)"),
+        ("pricing_requests", "completed_at", "TIMESTAMP WITH TIME ZONE"),
+        ("pricing_requests", "estimator_id", "INTEGER REFERENCES profiles(profile_id)"),
+        ("pricing_requests", "site_cost_inputs", "JSONB"),
+        ("pricing_requests", "estimated_at", "TIMESTAMP WITH TIME ZONE"),
+        ("pricing_requests", "price_breakdown", "JSONB"),
+        ("pricing_requests", "pricing_engine_version", "VARCHAR(20)"),
     ]
 
     for table, column, col_def in expected_columns:
